@@ -1,0 +1,16 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+*.tsbuildinfo
+*.db
+*.sqlite
+node_modules/
+dist/
+.DS_Store
+data/*
+!data/.gitkeep
+coverage.xml
+.coverage
