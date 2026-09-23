@@ -1,8 +1,14 @@
-# STARF
-STARF is a dataset detection and machine-learning workbench scaffold. The repository
-contains a FastAPI backend and a Vite/React frontend. External services are represented
-by interfaces and use deterministic mock implementations by default, so the project can
-be run locally without credentials.
+# STARK / STARF
+**Hybrid Anomaly Detection for Intra-Vehicular CAN-Bus Communication**
+
+> *"Safer Vehicles Through Smarter Detection"*
+
+![STARK Architecture Diagram](docs/assets/stark_architecture.png)
+
+STARK is a hybrid intrusion detection system (IDS) and machine-learning workbench designed to detect cyberattacks and anomalies in intra-vehicular Controller Area Network (CAN-Bus) traffic. It features a two-stage hybrid detection pipeline (deterministic protocol rules + deep neural network classification), a FastAPI backend, and an interactive Vite/React monitoring dashboard.
+
+For detailed design specifications, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 
 ## Quick start
 
