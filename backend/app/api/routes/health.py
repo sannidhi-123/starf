@@ -9,4 +9,10 @@ router = APIRouter()
 
 @router.get("/health")
 async def health(integration: Integration = Depends(get_integration)) -> dict[str, str]:
-    return {"status": "ok", "environment": settings.environment, "integration": integration.mode}
+    return {
+        "status": "ok",
+        "environment": settings.environment,
+        "integration": integration.mode,
+        "pipeline": "hybrid-cascade",
+        "model": "rule-fallback",
+    }
