@@ -1,0 +1,66 @@
+[project]
+name = "starf"
+version = "0.1.0"
+description = "Smart Traffic Anomaly Recognition Framework"
+requires-python = ">=3.11"
+
+# ---------------------------------------------------------------------------
+# Tool versions (kept here so CI and local dev stay in sync)
+# ---------------------------------------------------------------------------
+[project.optional-dependencies]
+dev = [
+    "ruff==0.16.9",
+    "black==26.5.1",
+    "pytest==8.3.4",
+    "pytest-asyncio==0.25.0",
+]
+
+# ---------------------------------------------------------------------------
+# Black
+# ---------------------------------------------------------------------------
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+# Exclude generated/venv paths
+exclude = '''
+/(
+    \.venv
+  | \.git
+  | __pycache__
+  | \.pytest_cache
+  | data
+)/
+'''
+
+# ---------------------------------------------------------------------------
+# Ruff
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+exclude = [
+    ".venv",
+    ".git",
+    "__pycache__",
+    ".pytest_cache",
+    "data/",
+]
+
+[tool.ruff.lint]
+# Day-4 CI baseline: enforce pyflakes (F) + pycodestyle errors (E) + warnings
+# (W) only.  UP / B008 / I rules are deferred until the team agrees to a
+# bulk-format sprint so no one's in-progress branch is broken on day 1.
+# Expand this list incrementally as the codebase matures.
+select = ["E", "W", "F"]
+ignore = [
+    "E501",   # line-too-long — black handles wrapping
+]
+
+# ---------------------------------------------------------------------------
+# Pytest (root-level config so `pytest` works from repo root too)
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["backend/tests"]
+pythonpath = ["backend"]
+asyncio_default_fixture_loop_scope = "function"

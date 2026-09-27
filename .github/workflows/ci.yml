@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  lint-and-test:
+    name: "Lint & Test (Python 3.11)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: |
+            backend/requirements.txt
+            pyproject.toml
+
+      # Install runtime + test dependencies
+      - name: Install backend dependencies
+        run: pip install -r backend/requirements.txt
+
+      # Install linting/formatting tools pinned in pyproject.toml
+      - name: Install dev tools (ruff, black)
+        run: pip install "ruff==0.16.9" "black==26.5.1"
+
+      # ---------------------------------------------------------------
+      # Step 1: ruff — catches real errors & style violations
+      # ---------------------------------------------------------------
+      - name: Run ruff check
+        run: ruff check .
+
+      # ---------------------------------------------------------------
+      # Step 2: black — enforces consistent formatting
+      # ---------------------------------------------------------------
+      - name: Run black --check
+        run: black --check .
+
+      # ---------------------------------------------------------------
+      # Step 3: pytest — run all existing tests
+      # ---------------------------------------------------------------
+      - name: Run pytest
+        run: pytest
+        working-directory: backend
