@@ -1,0 +1,153 @@
+# ==============================================================================
+# STARK (Smart Traffic Anomaly Recognition Kernel)
+# Stage 1 Rule Engine Configuration Skeleton
+# ==============================================================================
+# File: config/rules.yaml
+# Module: Detection Pipeline (Person 2)
+# Status: SKELETON / PLACEHOLDER (Real values derived by profiler on Day 5-6)
+# Specification Reference: docs/rule_spec.md
+# ==============================================================================
+
+version: "1.0-skeleton"
+vehicle_profile: "generic_can_profile"
+
+# ------------------------------------------------------------------------------
+# 1. Global & Tuned Parameters (Tuned on Validation Partition)
+# ------------------------------------------------------------------------------
+# These parameters govern bus-wide limits and multiplier factors.
+# They are never hardcoded and will be calibrated during validation.
+global_tuned_thresholds:
+  # R2: Factor applied to p01_dt[ID] to define the impossible inter-arrival floor.
+  # Threshold formula: dt_same_id < max(physical_min_dt, p01_dt[id] * r2_factor)
+  # Typical range: [0.15, 0.30]. Value below is TBD placeholder.
+  r2_factor: 0.20
+
+  # R3: Global aggregate bus message rate threshold in frames per second (fps).
+  # Threshold formula: msg_rate_50ms > r3_global_rate
+  # Theoretical max at 500 kbps is ~4000 fps; normal load is 1200-2000 fps.
+  # Value below is TBD placeholder (derived from p999 of 50ms window rate).
+  r3_global_rate: 2500.0
+
+  # R7: Factor applied to p99_dt[ID] to define the silence watchdog timeout.
+  # Threshold formula: dt_same_id > p99_dt[id] * r7_factor
+  # Typical range: [3.0, 5.0]. Value below is TBD placeholder.
+  r7_factor: 4.0
+
+  # R2: Hard physical transmission duration floor (in seconds) for CAN 2.0B at 500 kbps.
+  # Domain constraint: ~111 to 135 bit times => ~0.220 to 0.270 ms.
+  physical_min_dt: 0.00020
+
+  # R4: Default expected DLC if an ID is present in whitelist but lacks individual profile.
+  modal_dlc_default: 8
+
+  # R5: Default maximum payload repetition threshold for unprofiled IDs.
+  default_max_repetition: 5
+
+  # R6: Default maximum bitwise Hamming distance threshold for unprofiled IDs.
+  default_max_hamming: 48
+
+
+# ------------------------------------------------------------------------------
+# 2. Rule Severity Weights & Verdict Arbitration Thresholds
+# ------------------------------------------------------------------------------
+# Fixed architectural weights (cannot be modified).
+severity_weights:
+  R1: 3   # R1: Unknown CAN ID (VIOLATION)
+  R2: 3   # R2: Impossible Inter-Arrival Time (VIOLATION)
+  R3: 3   # R3: Bus Flooding / Frequency Exceeded (VIOLATION)
+  R4: 2   # R4: DLC Compliance Violation (SUSPECT)
+  R5: 2   # R5: ID Repetition Burst (SUSPECT)
+  R6: 2   # R6: Suspicious Payload Jump (SUSPECT)
+  R7: 1   # R7: Message Silence / Watchdog Timeout (SUSPECT)
+
+verdict_arbitration:
+  # Any rule firing with weight >= violation_min_weight produces an overall VIOLATION.
+  violation_min_weight: 3
+  # If no weight-3 rule fired, but total rule_score >= suspect_min_score, produces SUSPECT.
+  suspect_min_score: 2
+
+
+# ------------------------------------------------------------------------------
+# 3. Per-ID Baseline Distributions (Populated by Profiler)
+# ------------------------------------------------------------------------------
+# Below are placeholder schemas populated automatically by `profiler.py`
+# from benign normal driving training sets.
+per_id_baselines:
+
+  # R1: Authorized CAN ID Whitelist
+  # Any ID not in this list triggers R1 (Unknown CAN ID).
+  id_whitelist:
+    - 0x0140
+    - 0x0260
+    - 0x0316
+    - 0x0329
+    - 0x0430
+    - 0x0545
+    # TBD: Populated from dataset profile
+
+  # R2 & R7: Periodicity Classification Flag
+  # True for strictly cyclic ECUs (powertrain, ABS, steering).
+  # False for aperiodic event-driven frames (hazard lights, door locks).
+  is_periodic:
+    0x0140: true
+    0x0260: true
+    0x0316: true
+    0x0329: true
+    0x0430: true
+    0x0545: true
+    # TBD: Populated by profiler
+
+  # R4: Modal Data Length Code (Expected Payload Length in Bytes: 0-8)
+  # Frame triggering: (dlc < 0 or dlc > 8) or (dlc != modal_dlc[id])
+  modal_dlc:
+    0x0140: 8
+    0x0260: 8
+    0x0316: 8
+    0x0329: 8
+    0x0430: 8
+    0x0545: 8
+    # TBD: Populated by profiler
+
+  # R2: 1st Percentile of Inter-Arrival Time (in seconds)
+  # Used to compute the impossible inter-arrival floor: p01_dt * r2_factor
+  p01_dt:
+    0x0140: 0.0095   # ~10 ms nominal
+    0x0260: 0.0190   # ~20 ms nominal
+    0x0316: 0.0095   # ~10 ms nominal
+    0x0329: 0.0190   # ~20 ms nominal
+    0x0430: 0.0980   # ~100 ms nominal
+    0x0545: 0.4900   # ~500 ms nominal
+    # TBD: Populated by profiler
+
+  # R7: 99th Percentile of Inter-Arrival Time (in seconds)
+  # Used to compute the message silence watchdog threshold: p99_dt * r7_factor
+  p99_dt:
+    0x0140: 0.0110   # ~10 ms nominal
+    0x0260: 0.0215   # ~20 ms nominal
+    0x0316: 0.0110   # ~10 ms nominal
+    0x0329: 0.0215   # ~20 ms nominal
+    0x0430: 0.1050   # ~100 ms nominal
+    0x0545: 0.5150   # ~500 ms nominal
+    # TBD: Populated by profiler
+
+  # R5: 99.5th Percentile of Consecutive Identical Payload Repetitions
+  # Trigger: id_repetition_count > p995_rep[id]
+  p995_rep:
+    0x0140: 2
+    0x0260: 3
+    0x0316: 1        # Dynamic RPM + rolling counter
+    0x0329: 2
+    0x0430: 5
+    0x0545: 8
+    # TBD: Populated by profiler
+
+  # R6: 99th Percentile of Bitwise Hamming Distance Between Consecutive Frames of Same ID
+  # Trigger: hamming_prev_same_id > p99_hamming[id]
+  p99_hamming:
+    0x0140: 24
+    0x0260: 28
+    0x0316: 32
+    0x0329: 20
+    0x0430: 16
+    0x0545: 12
+    # TBD: Populated by profiler
