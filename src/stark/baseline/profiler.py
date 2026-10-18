@@ -330,11 +330,10 @@ class BaselineProfiler:
             # Parse CAN ID to canonical int if string
             if isinstance(raw_can_id, str):
                 v_clean = raw_can_id.strip()
-                can_id = (
-                    int(v_clean, 16)
-                    if v_clean.lower().startswith("0x")
-                    else int(v_clean)
-                )
+                try:
+                    can_id = int(v_clean, 16)
+                except ValueError:
+                    can_id = int(v_clean)
             else:
                 can_id = int(raw_can_id)
 

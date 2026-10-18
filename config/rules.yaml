@@ -20,18 +20,18 @@ global_tuned_thresholds:
   # R2: Factor applied to p01_dt[ID] to define the impossible inter-arrival floor.
   # Threshold formula: dt_same_id < max(physical_min_dt, p01_dt[id] * r2_factor)
   # Typical range: [0.15, 0.30]. Value below is TBD placeholder.
-  r2_factor: 0.20
+  r2_factor: 0.5
 
   # R3: Global aggregate bus message rate threshold in frames per second (fps).
   # Threshold formula: msg_rate_50ms > r3_global_rate
   # Theoretical max at 500 kbps is ~4000 fps; normal load is 1200-2000 fps.
   # Value below is TBD placeholder (derived from p999 of 50ms window rate).
-  r3_global_rate: 2500.0
+  r3_global_rate: 15.0
 
   # R7: Factor applied to p99_dt[ID] to define the silence watchdog timeout.
   # Threshold formula: dt_same_id > p99_dt[id] * r7_factor
   # Typical range: [3.0, 5.0]. Value below is TBD placeholder.
-  r7_factor: 4.0
+  r7_factor: 5.0
 
   # R2: Hard physical transmission duration floor (in seconds) for CAN 2.0B at 500 kbps.
   # Domain constraint: ~111 to 135 bit times => ~0.220 to 0.270 ms.
@@ -83,7 +83,6 @@ per_id_baselines:
     - 0x0329
     - 0x0430
     - 0x0545
-    # TBD: Populated from dataset profile
 
   # R2 & R7: Periodicity Classification Flag
   # True for strictly cyclic ECUs (powertrain, ABS, steering).
@@ -95,7 +94,6 @@ per_id_baselines:
     0x0329: true
     0x0430: true
     0x0545: true
-    # TBD: Populated by profiler
 
   # R4: Modal Data Length Code (Expected Payload Length in Bytes: 0-8)
   # Frame triggering: (dlc < 0 or dlc > 8) or (dlc != modal_dlc[id])
@@ -106,48 +104,43 @@ per_id_baselines:
     0x0329: 8
     0x0430: 8
     0x0545: 8
-    # TBD: Populated by profiler
 
   # R2: 1st Percentile of Inter-Arrival Time (in seconds)
   # Used to compute the impossible inter-arrival floor: p01_dt * r2_factor
   p01_dt:
-    0x0140: 0.0095   # ~10 ms nominal
-    0x0260: 0.0190   # ~20 ms nominal
-    0x0316: 0.0095   # ~10 ms nominal
-    0x0329: 0.0190   # ~20 ms nominal
-    0x0430: 0.0980   # ~100 ms nominal
-    0x0545: 0.4900   # ~500 ms nominal
-    # TBD: Populated by profiler
+    0x0140: 0.009021
+    0x0260: 0.019023
+    0x0316: 0.01901
+    0x0329: 0.049037
+    0x0430: 0.099039
+    0x0545: 0.099019
 
   # R7: 99th Percentile of Inter-Arrival Time (in seconds)
   # Used to compute the message silence watchdog threshold: p99_dt * r7_factor
   p99_dt:
-    0x0140: 0.0110   # ~10 ms nominal
-    0x0260: 0.0215   # ~20 ms nominal
-    0x0316: 0.0110   # ~10 ms nominal
-    0x0329: 0.0215   # ~20 ms nominal
-    0x0430: 0.1050   # ~100 ms nominal
-    0x0545: 0.5150   # ~500 ms nominal
-    # TBD: Populated by profiler
+    0x0140: 0.010981
+    0x0260: 0.020985
+    0x0316: 0.020971
+    0x0329: 0.050958
+    0x0430: 0.100989
+    0x0545: 0.100982
 
   # R5: 99.5th Percentile of Consecutive Identical Payload Repetitions
   # Trigger: id_repetition_count > p995_rep[id]
   p995_rep:
-    0x0140: 2
-    0x0260: 3
-    0x0316: 1        # Dynamic RPM + rolling counter
-    0x0329: 2
-    0x0430: 5
-    0x0545: 8
-    # TBD: Populated by profiler
+    0x0140: 1.0
+    0x0260: 1.0
+    0x0316: 1.0
+    0x0329: 1.0
+    0x0430: 1.0
+    0x0545: 1.0
 
   # R6: 99th Percentile of Bitwise Hamming Distance Between Consecutive Frames of Same ID
   # Trigger: hamming_prev_same_id > p99_hamming[id]
   p99_hamming:
-    0x0140: 24
-    0x0260: 28
-    0x0316: 32
-    0x0329: 20
-    0x0430: 16
-    0x0545: 12
-    # TBD: Populated by profiler
+    0x0140: 41.0
+    0x0260: 42.0
+    0x0316: 41.0
+    0x0329: 42.0
+    0x0430: 39.0
+    0x0545: 39.82
