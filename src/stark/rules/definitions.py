@@ -498,3 +498,109 @@ def r6_payload(
         return RuleHit(rule_id="R6", reason=reason, weight=2, verdict="SUSPECT")
 
     return None
+
+
+def r7_silence(
+    f: Any,
+    bp: Optional[Any] = None,
+    cfg: Optional[Any] = None,
+) -> Optional[RuleHit]:
+    """Rule 7 (R7): Check for unexpected message silence / watchdog timeout.
+
+    Fires when the elapsed time since the previous frame of the same CAN ID
+    exceeds the watchdog ceiling: dt_same_id > bp.p99_dt * cfg.r7_factor.
+    Only applies to periodic ECUs.
+
+    Args:
+        f: CAN frame representation (must contain dt_same_id / delta_t).
+        bp: Per-ID baseline profile (containing p99_dt, is_periodic) or BaselineProfiler.
+        cfg: Rule configuration (containing r7_factor).
+
+    Returns:
+        RuleHit with weight 1 and verdict SUSPECT if silence detected, else None.
+    """
+    if bp is None:
+        return None
+
+    dt_same_id = _extract_feature(f, FEATURE_DELTA_T, ["dt_same_id", "delta_t", "dt"])
+    if dt_same_id is None:
+        return None
+
+    can_id, _ = _extract_frame_attributes(f)
+
+    # Check periodicity — R7 only applies to periodic ECUs
+    is_periodic = False
+    if hasattr(bp, "is_periodic"):
+        val = bp.is_periodic
+        if isinstance(val, (bool, int)):
+            is_periodic = bool(val)
+        elif hasattr(val, "get"):
+            is_periodic = bool(val.get(can_id, False))
+    elif isinstance(bp, dict):
+        if "is_periodic" in bp:
+            val = bp["is_periodic"]
+            is_periodic = (
+                bool(val.get(can_id, False)) if isinstance(val, dict) else bool(val)
+            )
+    elif isinstance(bp, bool):
+        is_periodic = bp
+
+    if not is_periodic:
+        return None
+
+    # Extract p99_dt
+    p99_dt = None
+    if hasattr(bp, "p99_dt"):
+        val = bp.p99_dt
+        if isinstance(val, (int, float)):
+            p99_dt = float(val)
+        elif hasattr(val, "get"):
+            p99_dt = val.get(can_id)
+    elif isinstance(bp, dict):
+        if "p99_dt" in bp:
+            val = bp["p99_dt"]
+            p99_dt = (
+                val.get(can_id)
+                if isinstance(val, dict)
+                else float(val) if val is not None else None
+            )
+        elif can_id in bp:
+            p99_dt = float(bp[can_id])
+    elif isinstance(bp, (int, float)):
+        p99_dt = float(bp)
+
+    if p99_dt is None or p99_dt <= 0:
+        return None
+
+    # Extract r7_factor
+    r7_factor = 5.0
+    if cfg is not None:
+        factor_val = getattr(cfg, "r7_factor", None)
+        if factor_val is None and isinstance(cfg, dict):
+            factor_val = cfg.get("r7_factor")
+            if factor_val is None:
+                factor_val = cfg.get("global_tuned_thresholds", {}).get("r7_factor")
+        if factor_val is not None:
+            r7_factor = float(factor_val)
+
+    timeout = p99_dt * r7_factor
+
+    if dt_same_id > timeout:
+        x_ms = dt_same_id * 1000.0
+        reason = f"expected message missing for {x_ms:.1f}ms"
+        return RuleHit(rule_id="R7", reason=reason, weight=1, verdict="SUSPECT")
+
+    return None
+
+
+# Ordered list of all 7 Stage 1 rule functions for RuleEngine iteration.
+# Maintained in rule priority order: R1, R2, R3 (VIOLATION) then R4-R7 (SUSPECT).
+RULES = [
+    r1_unknown_id,
+    r2_impossible_dt,
+    r3_flooding,
+    r4_dlc,
+    r5_repetition,
+    r6_payload,
+    r7_silence,
+]

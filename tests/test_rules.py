@@ -5,12 +5,17 @@ Verifies protocol rules:
 - R2: Impossible inter-arrival time floor (r2_impossible_dt)
 - R3: Bus flooding / frequency exceeded (r3_flooding)
 - R4: Data Length Code (DLC) compliance violation (r4_dlc)
+- R5: Repetition burst (r5_repetition)
+- R6: Payload jump (r6_payload)
+- R7: Message silence / timeout (r7_silence)
+- RuleEngine: composite verdict arbitration
 """
 
 from types import SimpleNamespace
 import pytest
 
 from stark.rules.definitions import (
+    RULES,
     RuleHit,
     r1_unknown_id,
     r2_impossible_dt,
@@ -18,7 +23,10 @@ from stark.rules.definitions import (
     r4_dlc,
     r5_repetition,
     r6_payload,
+    r7_silence,
 )
+from stark.rules.engine import RuleEngine, RuleVerdict
+from stark.utils.exceptions import RuleConfigError
 
 
 def test_rule_hit_dataclass():
@@ -240,3 +248,220 @@ def test_r6_payload_quiet_normal():
     # Missing feature or bp=None
     assert r6_payload({"can_id": 0x140}, bp) is None
     assert r6_payload({"can_id": 0x140, "hamming_prev_same_id": 22}, None) is None
+
+
+# ---------------------------------------------------------------------------
+# Day 10: R7 + RuleEngine tests
+# ---------------------------------------------------------------------------
+
+
+def test_r7_silence_fires():
+    """R7 fires when elapsed time exceeds p99_dt * r7_factor for a periodic ID."""
+    # Nominal 10ms cycle; r7_factor=5.0 -> timeout = 50ms
+    bp = SimpleNamespace(is_periodic=True, p99_dt=0.010)
+    cfg = {"r7_factor": 5.0}
+
+    # 200ms gap >> 50ms timeout -> fires
+    frame = {"can_id": 0x140, "dt_same_id": 0.200}
+    hit = r7_silence(frame, bp, cfg)
+
+    assert hit is not None
+    assert hit.rule_id == "R7"
+    assert hit.weight == 1
+    assert hit.verdict == "SUSPECT"
+    assert hit.reason == "expected message missing for 200.0ms"
+
+
+def test_r7_silence_quiet():
+    """R7 stays quiet when elapsed time is within the watchdog ceiling."""
+    bp = SimpleNamespace(is_periodic=True, p99_dt=0.010)
+    cfg = {"r7_factor": 5.0}
+
+    # 30ms gap < 50ms timeout -> stays quiet
+    assert r7_silence({"can_id": 0x140, "dt_same_id": 0.030}, bp, cfg) is None
+
+    # Aperiodic ID -> stays quiet regardless
+    bp_aperiodic = SimpleNamespace(is_periodic=False, p99_dt=0.010)
+    assert r7_silence({"can_id": 0x140, "dt_same_id": 9.9}, bp_aperiodic, cfg) is None
+
+    # bp=None -> stays quiet
+    assert r7_silence({"can_id": 0x140, "dt_same_id": 0.200}, None, cfg) is None
+
+
+def test_rules_list_has_all_seven():
+    """RULES module-level list contains exactly all seven rule callables."""
+    assert len(RULES) == 7
+    rule_ids = {fn.__name__ for fn in RULES}
+    assert rule_ids == {
+        "r1_unknown_id",
+        "r2_impossible_dt",
+        "r3_flooding",
+        "r4_dlc",
+        "r5_repetition",
+        "r6_payload",
+        "r7_silence",
+    }
+
+
+# ---------------------------------------------------------------------------
+# RuleEngine verdict arbitration tests
+# ---------------------------------------------------------------------------
+
+
+def _make_engine(cfg: dict, whitelist=None):
+    """Helper: build RuleEngine with an optional in-memory profile."""
+    profile = None
+    if whitelist is not None:
+        profile = SimpleNamespace(id_whitelist=whitelist)
+    return RuleEngine(cfg=cfg, profile=profile)
+
+
+def test_engine_violation_on_weight3_hit():
+    """Verdict is VIOLATION when any weight-3 rule fires (e.g. R1)."""
+    engine = _make_engine(cfg={}, whitelist=[0x260])  # 0x140 not in whitelist
+
+    # Unknown ID -> R1 fires, weight 3 -> VIOLATION regardless of other rules
+    frame = {"can_id": 0x140, "dlc": 8}
+    verdict = engine.evaluate(frame)
+
+    assert isinstance(verdict, RuleVerdict)
+    assert verdict.verdict == "VIOLATION"
+    assert verdict.score >= 3
+    assert any(h.rule_id == "R1" for h in verdict.hits)
+
+
+def test_engine_suspect_on_weight2_hit():
+    """Verdict is SUSPECT for a single weight-2 hit (e.g. R4 DLC mismatch)."""
+    # R4 only: known ID in whitelist, DLC mismatch
+    profile = SimpleNamespace(
+        id_whitelist=[0x140],
+        p01_dt=0.010,
+        p99_dt=0.010,
+        is_periodic=True,
+        modal_dlc=8,
+        p995_rep=9,
+        p99_hamming=48,
+    )
+    cfg = {
+        "global_tuned_thresholds": {
+            "r2_factor": 0.5,
+            "r3_global_rate": 9999.0,
+            "r7_factor": 5.0,
+        }
+    }
+    engine = RuleEngine(
+        cfg=cfg,
+        profile=profile,
+        # Restrict to R4 only to isolate the weight-2 hit
+        rules=[r4_dlc],
+    )
+
+    frame = {"can_id": 0x140, "dlc": 4}  # DLC mismatch
+    verdict = engine.evaluate(frame)
+
+    assert verdict.verdict == "SUSPECT"
+    assert verdict.score == 2
+    assert len(verdict.hits) == 1
+    assert verdict.hits[0].rule_id == "R4"
+
+
+def test_engine_clean_when_nothing_fires():
+    """Verdict is CLEAN when no rules fire on a fully compliant frame."""
+    profile = SimpleNamespace(
+        id_whitelist=[0x140],
+        p01_dt=0.010,
+        p99_dt=0.010,
+        is_periodic=True,
+        modal_dlc=8,
+        p995_rep=9,
+        p99_hamming=48,
+    )
+    cfg = {
+        "global_tuned_thresholds": {
+            "r2_factor": 0.5,
+            "r3_global_rate": 9999.0,
+            "r7_factor": 5.0,
+        }
+    }
+    engine = RuleEngine(cfg=cfg, profile=profile)
+
+    frame = {"can_id": 0x140, "dlc": 8, "dt_same_id": 0.010}
+    verdict = engine.evaluate(frame)
+
+    assert verdict.verdict == "CLEAN"
+    assert verdict.score == 0
+    assert verdict.hits == []
+
+
+def test_engine_clean_on_lone_r7_hit():
+    """A lone R7 hit (score=1, no weight-3) stays CLEAN per spec §2.2."""
+    profile = SimpleNamespace(
+        id_whitelist=[0x140],
+        p01_dt=0.010,
+        p99_dt=0.010,
+        is_periodic=True,
+        modal_dlc=8,
+        p995_rep=9,
+        p99_hamming=48,
+    )
+    cfg = {
+        "global_tuned_thresholds": {
+            "r2_factor": 0.5,
+            "r3_global_rate": 9999.0,
+            "r7_factor": 5.0,
+        }
+    }
+    engine = RuleEngine(cfg=cfg, profile=profile, rules=[r7_silence])
+
+    # 200ms gap triggers R7 (weight 1, score 1) -> CLEAN not SUSPECT
+    frame = {"can_id": 0x140, "dt_same_id": 0.200}
+    verdict = engine.evaluate(frame)
+
+    assert verdict.verdict == "CLEAN"  # score=1 < 2 and no weight-3 hit
+    assert verdict.score == 1
+    assert len(verdict.hits) == 1
+    assert verdict.hits[0].rule_id == "R7"
+
+
+def test_engine_from_yaml(tmp_path):
+    """RuleEngine.from_yaml loads a valid rules.yaml and evaluates a frame.
+
+    When no profile is supplied, R1 fires for every ID (no whitelist) and the
+    verdict is VIOLATION.  Pass a minimal profile to test the happy path.
+    """
+    rules_yaml = tmp_path / "rules.yaml"
+    rules_yaml.write_text(
+        "global_tuned_thresholds:\n"
+        "  r2_factor: 0.5\n"
+        "  r3_global_rate: 9999.0\n"
+        "  r7_factor: 5.0\n"
+        "per_id_baselines:\n"
+        "  id_whitelist: [320]\n",
+        encoding="utf-8",
+    )
+
+    # Without a profile every ID is unknown -> R1 fires -> VIOLATION
+    engine_no_profile = RuleEngine.from_yaml(rules_yaml)
+    verdict_no_profile = engine_no_profile.evaluate({"can_id": 0x140, "dlc": 8})
+    assert verdict_no_profile.verdict == "VIOLATION"
+    assert any(h.rule_id == "R1" for h in verdict_no_profile.hits)
+
+    # With a profile that whitelists 0x140 (=320) -> R1 silent -> CLEAN
+    profile = SimpleNamespace(id_whitelist=[0x140], modal_dlc=8, is_periodic=False)
+    engine_with_profile = RuleEngine.from_yaml(rules_yaml, profile=profile)
+    verdict_ok = engine_with_profile.evaluate({"can_id": 0x140, "dlc": 8})
+    assert verdict_ok.verdict == "CLEAN"
+
+
+def test_engine_from_yaml_missing_file():
+    """RuleEngine.from_yaml raises RuleConfigError for a non-existent file."""
+    with pytest.raises(RuleConfigError, match="not found"):
+        RuleEngine.from_yaml("/nonexistent/path/rules.yaml")
+
+
+def test_engine_from_yaml_malformed(tmp_path):
+    """RuleEngine.from_yaml raises RuleConfigError for YAML missing required keys."""
+    bad_yaml = tmp_path / "bad.yaml"
+    bad_yaml.write_text("only_wrong_key: 1\n", encoding="utf-8")
+    with pytest.raises(RuleConfigError, match="missing required top-level keys"):
+        RuleEngine.from_yaml(bad_yaml)
