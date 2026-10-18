@@ -2,13 +2,21 @@
 
 Verifies protocol rules:
 - R1: Unknown / unauthorized CAN arbitration ID (r1_unknown_id)
+- R2: Impossible inter-arrival time floor (r2_impossible_dt)
+- R3: Bus flooding / frequency exceeded (r3_flooding)
 - R4: Data Length Code (DLC) compliance violation (r4_dlc)
 """
 
 from types import SimpleNamespace
 import pytest
 
-from stark.rules.definitions import RuleHit, r1_unknown_id, r4_dlc
+from stark.rules.definitions import (
+    RuleHit,
+    r1_unknown_id,
+    r2_impossible_dt,
+    r3_flooding,
+    r4_dlc,
+)
 
 
 def test_rule_hit_dataclass():
@@ -62,6 +70,69 @@ def test_r1_known_id():
     per_id_bp = SimpleNamespace(can_id=0x140, modal_dlc=8)
     hit_per_id = r1_unknown_id(known_frame, bp=per_id_bp)
     assert hit_per_id is None
+
+
+def test_r2_impossible_dt_fires():
+    """R2 fires when dt_same_id is below learned floor (0.4x p01_dt)."""
+    # Nominal 10ms cycle, r2_factor 0.5 -> floor is 5.0ms
+    bp = SimpleNamespace(p01_dt=0.010)
+    cfg = {"r2_factor": 0.5}
+
+    # At 0.4x p01 (4.0ms), fires violation below learned floor 5.0ms
+    frame_fast = {"can_id": 0x140, "dt_same_id": 0.004}
+    hit = r2_impossible_dt(frame_fast, bp=bp, cfg=cfg)
+
+    assert hit is not None
+    assert hit.rule_id == "R2"
+    assert hit.weight == 3
+    assert hit.verdict == "VIOLATION"
+    assert hit.reason == "Δt=4.0ms below learned floor 5.0ms"
+
+
+def test_r2_impossible_dt_quiet():
+    """R2 stays quiet when dt_same_id is above learned floor (1.1x p01_dt)."""
+    bp = SimpleNamespace(p01_dt=0.010)
+    cfg = {"r2_factor": 0.5}
+
+    # At 1.1x p01 (11.0ms), well above 5.0ms floor -> stays quiet
+    frame_normal = {"can_id": 0x140, "dt_same_id": 0.011}
+    hit = r2_impossible_dt(frame_normal, bp=bp, cfg=cfg)
+    assert hit is None
+
+    # Stays quiet when bp is None (R1 handles unseen IDs)
+    assert r2_impossible_dt(frame_normal, bp=None, cfg=cfg) is None
+
+    # Stays quiet when dt_same_id is missing (e.g. initial frame)
+    assert r2_impossible_dt({"can_id": 0x140}, bp=bp, cfg=cfg) is None
+
+
+def test_r3_flooding_fires():
+    """R3 fires when msg_rate_50ms exceeds cfg.r3_global_rate."""
+    cfg = {"r3_global_rate": 15.0}
+
+    # Burst above global threshold (e.g. 25 frames in 50ms)
+    frame_flooding = {"msg_rate_50ms": 25.0}
+
+    # Must work even when bp is None (ID-independent)
+    hit = r3_flooding(frame_flooding, bp=None, cfg=cfg)
+
+    assert hit is not None
+    assert hit.rule_id == "R3"
+    assert hit.weight == 3
+    assert hit.verdict == "VIOLATION"
+    assert hit.reason == "bus rate 25 msgs/50ms exceeds 15"
+
+
+def test_r3_flooding_quiet():
+    """R3 stays quiet when bus rate is below global threshold."""
+    cfg = {"r3_global_rate": 15.0}
+
+    frame_normal = {"msg_rate_50ms": 10.0}
+    hit = r3_flooding(frame_normal, bp=None, cfg=cfg)
+    assert hit is None
+
+    # Stays quiet when msg_rate_50ms is missing
+    assert r3_flooding({}, bp=None, cfg=cfg) is None
 
 
 def test_r4_dlc_mismatch():
