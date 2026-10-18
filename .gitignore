@@ -18,3 +18,4 @@ coverage.xml
 backend/.venv/
 
 /backend/.venv/
+*.egg-info/
