@@ -16,6 +16,8 @@ from stark.rules.definitions import (
     r2_impossible_dt,
     r3_flooding,
     r4_dlc,
+    r5_repetition,
+    r6_payload,
 )
 
 
@@ -176,3 +178,65 @@ def test_r4_dlc_match():
     bp_zero = SimpleNamespace(modal_dlc=0)
     hit_zero = r4_dlc(zero_frame, bp=bp_zero)
     assert hit_zero is None
+
+
+def test_r5_repetition_fires():
+    """R5 fires on 37 repeats against a p99.5 of 9."""
+    f = {"id_repetition_count": 37}
+    bp = SimpleNamespace(p995_rep=9)
+
+    hit = r5_repetition(f, bp)
+    assert hit is not None
+    assert hit.rule_id == "R5"
+    assert hit.weight == 2
+    assert hit.verdict == "SUSPECT"
+    assert hit.reason == "37 repeats in last 50 frames (p99.5=9)"
+
+
+def test_r5_repetition_quiet():
+    """R5 stays quiet when repetition count is below or equal to threshold."""
+    bp = SimpleNamespace(p995_rep=9)
+
+    # 5 repeats <= 9 -> stays quiet
+    assert r5_repetition({"id_repetition_count": 5}, bp) is None
+    # 9 repeats <= 9 -> stays quiet
+    assert r5_repetition({"id_repetition_count": 9}, bp) is None
+    # Missing feature or bp=None
+    assert r5_repetition({}, bp) is None
+    assert r5_repetition({"id_repetition_count": 37}, None) is None
+
+
+def test_r6_payload_fires():
+    """R6 fires on a 22-bit jump against a p99 of 6 for a periodic ID."""
+    f = {"can_id": 0x140, "hamming_prev_same_id": 22}
+    bp = SimpleNamespace(is_periodic=True, p99_hamming=6)
+
+    hit = r6_payload(f, bp)
+    assert hit is not None
+    assert hit.rule_id == "R6"
+    assert hit.weight == 2
+    assert hit.verdict == "SUSPECT"
+    assert hit.reason == "payload jumped 22 bits (p99=6)"
+
+
+def test_r6_payload_quiet_aperiodic():
+    """R6 stays quiet when the ID is not periodic even if Hamming jump is large."""
+    f = {"can_id": 0x140, "hamming_prev_same_id": 22}
+    # ID is event-triggered / aperiodic
+    bp_aperiodic = SimpleNamespace(is_periodic=False, p99_hamming=6)
+
+    hit = r6_payload(f, bp_aperiodic)
+    assert hit is None
+
+
+def test_r6_payload_quiet_normal():
+    """R6 stays quiet when bitwise Hamming distance is below or equal to threshold."""
+    bp = SimpleNamespace(is_periodic=True, p99_hamming=6)
+
+    # 4-bit jump <= 6 -> stays quiet
+    assert r6_payload({"can_id": 0x140, "hamming_prev_same_id": 4}, bp) is None
+    # 6-bit jump <= 6 -> stays quiet
+    assert r6_payload({"can_id": 0x140, "hamming_prev_same_id": 6}, bp) is None
+    # Missing feature or bp=None
+    assert r6_payload({"can_id": 0x140}, bp) is None
+    assert r6_payload({"can_id": 0x140, "hamming_prev_same_id": 22}, None) is None

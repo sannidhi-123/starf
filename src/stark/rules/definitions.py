@@ -314,3 +314,187 @@ def r4_dlc(
         return RuleHit(rule_id="R4", reason=reason, weight=2, verdict="SUSPECT")
 
     return None
+
+
+def r5_repetition(
+    f: Any,
+    bp: Optional[Any] = None,
+    cfg: Optional[Any] = None,
+) -> Optional[RuleHit]:
+    """Rule 5 (R5): Check for consecutive identical payload repetition bursts.
+
+    Fires when consecutive identical payloads for this CAN ID exceed the
+    normal 99.5th percentile baseline: id_repetition_count > bp.p995_rep.
+
+    Args:
+        f: CAN frame representation (must contain id_repetition_count).
+        bp: Per-ID baseline profile (containing p995_rep) or BaselineProfiler.
+        cfg: Rule configuration (containing default_max_repetition fallback).
+
+    Returns:
+        RuleHit with weight 2 and verdict SUSPECT if repetition burst detected, else None.
+    """
+    if bp is None:
+        return None
+
+    rep_count = _extract_feature(
+        f,
+        FEATURE_REPETITION_COUNT,
+        ["id_repetition_count", "repetition_count", "repetition", "rep_count"],
+    )
+    if rep_count is None:
+        return None
+
+    can_id, _ = _extract_frame_attributes(f)
+
+    # Extract p995_rep
+    threshold = None
+    if hasattr(bp, "p995_rep"):
+        val = bp.p995_rep
+        if isinstance(val, (int, float)):
+            threshold = float(val)
+        elif hasattr(val, "get"):
+            threshold = val.get(can_id)
+    elif isinstance(bp, dict):
+        if "p995_rep" in bp:
+            val = bp["p995_rep"]
+            threshold = (
+                val.get(can_id)
+                if isinstance(val, dict)
+                else float(val) if val is not None else None
+            )
+        elif can_id in bp:
+            threshold = float(bp[can_id])
+    elif isinstance(bp, (int, float)):
+        threshold = float(bp)
+
+    if threshold is None and cfg is not None:
+        fallback = getattr(cfg, "default_max_repetition", None)
+        if fallback is None and isinstance(cfg, dict):
+            fallback = cfg.get("default_max_repetition")
+            if fallback is None:
+                fallback = cfg.get("global_tuned_thresholds", {}).get(
+                    "default_max_repetition"
+                )
+        if fallback is not None:
+            threshold = float(fallback)
+
+    if threshold is None:
+        threshold = 5.0
+
+    if rep_count > threshold:
+        n_str = (
+            str(int(rep_count)) if float(rep_count).is_integer() else f"{rep_count:.1f}"
+        )
+        y_str = (
+            str(int(threshold)) if float(threshold).is_integer() else f"{threshold:.1f}"
+        )
+        reason = f"{n_str} repeats in last 50 frames (p99.5={y_str})"
+        return RuleHit(rule_id="R5", reason=reason, weight=2, verdict="SUSPECT")
+
+    return None
+
+
+def r6_payload(
+    f: Any,
+    bp: Optional[Any] = None,
+    cfg: Optional[Any] = None,
+) -> Optional[RuleHit]:
+    """Rule 6 (R6): Check for abnormal payload rate of change / bitwise jump.
+
+    Fires when the ID is periodic AND the consecutive bitwise Hamming distance
+    exceeds the 99th percentile baseline: bp.is_periodic AND hamming_prev_same_id > bp.p99_hamming.
+
+    Args:
+        f: CAN frame representation (must contain hamming_prev_same_id).
+        bp: Per-ID baseline profile (containing is_periodic, p99_hamming) or BaselineProfiler.
+        cfg: Rule configuration (containing default_max_hamming fallback).
+
+    Returns:
+        RuleHit with weight 2 and verdict SUSPECT if payload jump detected, else None.
+    """
+    if bp is None:
+        return None
+
+    hamming = _extract_feature(
+        f,
+        FEATURE_HAMMING_DISTANCE,
+        [
+            "hamming_prev_same_id",
+            "hamming_distance",
+            "hamming_prev",
+            "hamming",
+        ],
+    )
+    if hamming is None:
+        return None
+
+    can_id, _ = _extract_frame_attributes(f)
+
+    # Extract is_periodic
+    is_periodic = False
+    if hasattr(bp, "is_periodic"):
+        val = bp.is_periodic
+        if isinstance(val, (bool, int)):
+            is_periodic = bool(val)
+        elif hasattr(val, "get"):
+            is_periodic = bool(val.get(can_id, False))
+    elif isinstance(bp, dict):
+        if "is_periodic" in bp:
+            val = bp["is_periodic"]
+            is_periodic = (
+                bool(val.get(can_id, False)) if isinstance(val, dict) else bool(val)
+            )
+        elif can_id in bp:
+            is_periodic = bool(bp[can_id])
+    elif isinstance(bp, bool):
+        is_periodic = bp
+
+    # R6 only applies to periodic ECUs (event-driven IDs have discontinuous payloads)
+    if not is_periodic:
+        return None
+
+    # Extract p99_hamming
+    threshold = None
+    if hasattr(bp, "p99_hamming"):
+        val = bp.p99_hamming
+        if isinstance(val, (int, float)):
+            threshold = float(val)
+        elif hasattr(val, "get"):
+            threshold = val.get(can_id)
+    elif isinstance(bp, dict):
+        if "p99_hamming" in bp:
+            val = bp["p99_hamming"]
+            threshold = (
+                val.get(can_id)
+                if isinstance(val, dict)
+                else float(val) if val is not None else None
+            )
+        elif can_id in bp:
+            threshold = float(bp[can_id])
+    elif isinstance(bp, (int, float)):
+        threshold = float(bp)
+
+    if threshold is None and cfg is not None:
+        fallback = getattr(cfg, "default_max_hamming", None)
+        if fallback is None and isinstance(cfg, dict):
+            fallback = cfg.get("default_max_hamming")
+            if fallback is None:
+                fallback = cfg.get("global_tuned_thresholds", {}).get(
+                    "default_max_hamming"
+                )
+        if fallback is not None:
+            threshold = float(fallback)
+
+    if threshold is None:
+        threshold = 48.0
+
+    if hamming > threshold:
+        n_str = str(int(hamming)) if float(hamming).is_integer() else f"{hamming:.1f}"
+        y_str = (
+            str(int(threshold)) if float(threshold).is_integer() else f"{threshold:.1f}"
+        )
+        reason = f"payload jumped {n_str} bits (p99={y_str})"
+        return RuleHit(rule_id="R6", reason=reason, weight=2, verdict="SUSPECT")
+
+    return None
