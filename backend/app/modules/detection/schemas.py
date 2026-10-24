@@ -5,8 +5,7 @@ frame evaluations, and detection summary results as defined in docs/ARCHITECTURE
 """
 
 from enum import Enum
-from typing import Any
-
+from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
@@ -22,7 +21,7 @@ def parse_can_id_value(val: Any) -> int:
         v = val.strip()
         parsed = int(v, 16) if v.lower().startswith("0x") else int(v)
     else:
-        raise TypeError(f"Cannot parse CAN ID from value: {val!r}")
+        raise ValueError(f"Cannot parse CAN ID from value: {val!r}")
 
     if not (0 <= parsed <= 0x1FFFFFFF):
         raise ValueError(
@@ -110,17 +109,17 @@ class CANFrameInput(BaseModel):
         default="",
         description="Payload bytes formatted as normalized hex string (e.g., '00112233')",
     )
-    delta_t: float | None = Field(
+    delta_t: Optional[float] = Field(
         default=None,
         ge=0.0,
         description="Inter-arrival time difference Δt = t_i - t_{i-1} in seconds",
     )
-    frequency: float | None = Field(
+    frequency: Optional[float] = Field(
         default=None,
         ge=0.0,
         description="Message transmission frequency in Hz within a sliding time window",
     )
-    byte_entropy: float | None = Field(
+    byte_entropy: Optional[float] = Field(
         default=None,
         ge=0.0,
         le=8.0,
@@ -140,9 +139,7 @@ class CANFrameInput(BaseModel):
         if isinstance(v, (list, tuple)):
             for idx, b in enumerate(v):
                 if not isinstance(b, int) or not (0 <= b <= 255):
-                    raise ValueError(
-                        f"Payload byte at index {idx} ({b!r}) must be an integer between 0 and 255"
-                    )
+                    raise ValueError(f"Payload byte at index {idx} ({b!r}) must be an integer between 0 and 255")
             return "".join(f"{b:02X}" for b in v)
         if isinstance(v, bytes):
             return v.hex().upper()
@@ -151,13 +148,9 @@ class CANFrameInput(BaseModel):
             if clean and not all(c in "0123456789ABCDEF" for c in clean):
                 raise ValueError(f"Invalid characters in hex payload string: {v!r}")
             if len(clean) % 2 != 0:
-                raise ValueError(
-                    f"Payload hex string must contain an even number of hex digits, got {len(clean)}"
-                )
+                raise ValueError(f"Payload hex string must contain an even number of hex digits, got {len(clean)}")
             return clean
-        raise ValueError(
-            f"Unsupported payload type {type(v).__name__}. Expected hex string, bytes, or List[int]."
-        )
+        raise ValueError(f"Unsupported payload type {type(v).__name__}. Expected hex string, bytes, or List[int].")
 
     @model_validator(mode="after")
     def validate_payload_dlc_match(self) -> "CANFrameInput":
@@ -172,9 +165,7 @@ class CANFrameInput(BaseModel):
     @property
     def can_id_hex(self) -> str:
         """Formatted hexadecimal representation of the CAN ID."""
-        return (
-            f"0x{self.can_id:03X}" if self.can_id <= 0x7FF else f"0x{self.can_id:08X}"
-        )
+        return f"0x{self.can_id:03X}" if self.can_id <= 0x7FF else f"0x{self.can_id:08X}"
 
     @property
     def is_extended(self) -> bool:
@@ -182,13 +173,11 @@ class CANFrameInput(BaseModel):
         return self.can_id > 0x7FF
 
     @property
-    def payload_bytes(self) -> list[int]:
+    def payload_bytes(self) -> List[int]:
         """Byte array representation of payload."""
         if not self.payload:
             return []
-        return [
-            int(self.payload[i : i + 2], 16) for i in range(0, len(self.payload), 2)
-        ]
+        return [int(self.payload[i : i + 2], 16) for i in range(0, len(self.payload), 2)]
 
 
 # ============================================================================
@@ -209,7 +198,7 @@ class DetectionRuleConfig(BaseModel):
         default=True,
         description="Whether to validate arbitration IDs against an allowed whitelist",
     )
-    allowed_can_ids: list[int] | None = Field(
+    allowed_can_ids: Optional[List[int]] = Field(
         default=None,
         description="Whitelist of authorized CAN arbitration IDs. If None, all valid IDs are permitted.",
     )
@@ -229,7 +218,7 @@ class DetectionRuleConfig(BaseModel):
         le=8,
         description="Maximum permitted DLC (0 to 8)",
     )
-    expected_dlc_map: dict[int, int] | None = Field(
+    expected_dlc_map: Optional[Dict[int, int]] = Field(
         default=None,
         description="Optional OEM mapping of specific CAN IDs to their exact required DLC",
     )
@@ -237,17 +226,17 @@ class DetectionRuleConfig(BaseModel):
         default=True,
         description="Whether to enforce timing (delta_t and frequency) constraints",
     )
-    min_delta_t: float | None = Field(
+    min_delta_t: Optional[float] = Field(
         default=None,
         ge=0.0,
         description="Minimum inter-arrival time in seconds (threshold below which indicates DoS/flooding bursts)",
     )
-    max_delta_t: float | None = Field(
+    max_delta_t: Optional[float] = Field(
         default=None,
         ge=0.0,
         description="Maximum inter-arrival time in seconds (threshold above which indicates transmission timeout)",
     )
-    max_frequency_hz: float | None = Field(
+    max_frequency_hz: Optional[float] = Field(
         default=None,
         gt=0.0,
         description="Maximum allowable transmission frequency in Hz for any arbitration ID",
@@ -255,46 +244,35 @@ class DetectionRuleConfig(BaseModel):
 
     @field_validator("allowed_can_ids", mode="before")
     @classmethod
-    def parse_allowed_can_ids(cls, v: Any) -> list[int] | None:
+    def parse_allowed_can_ids(cls, v: Any) -> Optional[List[int]]:
         if v is None:
             return None
         if not isinstance(v, (list, tuple, set)):
-            raise TypeError("allowed_can_ids must be an iterable of CAN IDs")
+            raise ValueError("allowed_can_ids must be an iterable of CAN IDs")
         return [parse_can_id_value(item) for item in v]
 
     @field_validator("expected_dlc_map", mode="before")
     @classmethod
-    def parse_expected_dlc_map(cls, v: Any) -> dict[int, int] | None:
+    def parse_expected_dlc_map(cls, v: Any) -> Optional[Dict[int, int]]:
         if v is None:
             return None
         if not isinstance(v, dict):
-            raise TypeError(
-                "expected_dlc_map must be a dictionary mapping CAN ID to expected DLC"
-            )
-        parsed_map: dict[int, int] = {}
+            raise ValueError("expected_dlc_map must be a dictionary mapping CAN ID to expected DLC")
+        parsed_map: Dict[int, int] = {}
         for k, dlc_val in v.items():
             parsed_id = parse_can_id_value(k)
             if not isinstance(dlc_val, int) or not (0 <= dlc_val <= 8):
-                raise ValueError(
-                    f"Expected DLC for CAN ID {parsed_id} must be an integer between 0 and 8, got {dlc_val!r}"
-                )
+                raise ValueError(f"Expected DLC for CAN ID {parsed_id} must be an integer between 0 and 8, got {dlc_val!r}")
             parsed_map[parsed_id] = dlc_val
         return parsed_map
 
     @model_validator(mode="after")
     def validate_rule_ranges(self) -> "DetectionRuleConfig":
         if self.min_dlc > self.max_dlc:
-            raise ValueError(
-                f"min_dlc ({self.min_dlc}) cannot exceed max_dlc ({self.max_dlc})."
-            )
-        if (
-            self.min_delta_t is not None
-            and self.max_delta_t is not None
-            and self.min_delta_t > self.max_delta_t
-        ):
-            raise ValueError(
-                f"min_delta_t ({self.min_delta_t}) cannot exceed max_delta_t ({self.max_delta_t})."
-            )
+            raise ValueError(f"min_dlc ({self.min_dlc}) cannot exceed max_dlc ({self.max_dlc}).")
+        if self.min_delta_t is not None and self.max_delta_t is not None:
+            if self.min_delta_t > self.max_delta_t:
+                raise ValueError(f"min_delta_t ({self.min_delta_t}) cannot exceed max_delta_t ({self.max_delta_t}).")
         return self
 
 
@@ -311,19 +289,19 @@ class DetectionRunRequest(BaseModel):
     2. An in-memory batch of CAN frames (via `frames`)
     """
 
-    dataset_id: str | None = Field(
+    dataset_id: Optional[str] = Field(
         default=None,
         description="ID of the stored dataset to evaluate (from Dataset Management)",
     )
-    frames: list[CANFrameInput] | None = Field(
+    frames: Optional[List[CANFrameInput]] = Field(
         default=None,
         description="In-memory list of CAN frames to evaluate directly",
     )
-    rule_config: DetectionRuleConfig | None = Field(
+    rule_config: Optional[DetectionRuleConfig] = Field(
         default=None,
         description="Custom rule parameters; uses default deterministic rules if omitted",
     )
-    model_id: str | None = Field(
+    model_id: Optional[str] = Field(
         default=None,
         description="Optional identifier of the Stage 2 ML model to evaluate suspicious frames",
     )
@@ -335,9 +313,7 @@ class DetectionRunRequest(BaseModel):
     @model_validator(mode="after")
     def validate_data_source(self) -> "DetectionRunRequest":
         if not self.dataset_id and not self.frames:
-            raise ValueError(
-                "Either 'dataset_id' or 'frames' must be provided in DetectionRunRequest."
-            )
+            raise ValueError("Either 'dataset_id' or 'frames' must be provided in DetectionRunRequest.")
         return self
 
 
@@ -349,11 +325,11 @@ class DetectionRunRequest(BaseModel):
 class RuleViolation(BaseModel):
     """Detailed record of a single Stage 1 deterministic rule violation."""
 
-    rule_type: RuleViolationType | str = Field(
+    rule_type: Union[RuleViolationType, str] = Field(
         ...,
         description="Category of the violated rule (e.g., 'unauthorized_can_id', 'dlc_mismatch')",
     )
-    severity: ViolationSeverity | str = Field(
+    severity: Union[ViolationSeverity, str] = Field(
         default=ViolationSeverity.MEDIUM,
         description="Severity assessment for this violation (low, medium, high, critical)",
     )
@@ -361,11 +337,11 @@ class RuleViolation(BaseModel):
         ...,
         description="Explanatory message detailing the rule violation",
     )
-    detected_value: Any | None = Field(
+    detected_value: Optional[Any] = Field(
         default=None,
         description="The observed value triggering the rule violation (e.g. invalid DLC or small delta_t)",
     )
-    expected_value: Any | None = Field(
+    expected_value: Optional[Any] = Field(
         default=None,
         description="The expected reference value or boundary condition",
     )
@@ -388,7 +364,7 @@ class FrameEvaluationResult(BaseModel):
         ...,
         description="The evaluated CAN frame",
     )
-    status: FrameStatus | str = Field(
+    status: Union[FrameStatus, str] = Field(
         default=FrameStatus.NORMAL,
         description="Traffic classification: 'normal' or 'suspicious'",
     )
@@ -396,7 +372,7 @@ class FrameEvaluationResult(BaseModel):
         default=False,
         description="True if any Stage 1 rule violation occurred",
     )
-    violations: list[RuleViolation] = Field(
+    violations: List[RuleViolation] = Field(
         default_factory=list,
         description="List of detected rule violations (empty for normal frames)",
     )
@@ -430,7 +406,7 @@ class DetectionResponse(BaseModel):
         ...,
         description="Unique identifier for the detection job/run",
     )
-    status: JobStatus | str = Field(
+    status: Union[JobStatus, str] = Field(
         default=JobStatus.COMPLETED,
         description="Execution status ('queued', 'running', 'completed', 'failed')",
     )
@@ -454,20 +430,20 @@ class DetectionResponse(BaseModel):
         ge=0,
         description="Count of suspicious frames flagged for Stage 2 ML",
     )
-    violations_summary: dict[str, int] = Field(
+    violations_summary: Dict[str, int] = Field(
         default_factory=dict,
         description="Summary count of violations grouped by rule type",
     )
-    frame_evaluations: list[FrameEvaluationResult] | None = Field(
+    frame_evaluations: Optional[List[FrameEvaluationResult]] = Field(
         default=None,
         description="Detailed frame evaluations (included when requested)",
     )
-    execution_time_ms: float | None = Field(
+    execution_time_ms: Optional[float] = Field(
         default=None,
         ge=0.0,
         description="Detection execution duration in milliseconds",
     )
-    dataset_id: str | None = Field(
+    dataset_id: Optional[str] = Field(
         default=None,
         description="Source dataset identifier if run against a dataset",
     )

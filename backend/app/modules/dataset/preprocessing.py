@@ -30,15 +30,7 @@ NUMERIC_FEATURES = [
     "changed_bytes",
     *BYTE_COLUMNS,
 ]
-FRAME_COLUMNS = [
-    "timestamp",
-    "can_id",
-    "dlc",
-    *BYTE_COLUMNS,
-    "flag",
-    "attack_type",
-    "y",
-]
+FRAME_COLUMNS = ["timestamp", "can_id", "dlc", *BYTE_COLUMNS, "flag", "attack_type", "y"]
 _BYTE_POPCOUNT = np.array([value.bit_count() for value in range(256)], dtype=np.uint8)
 _ATTACK_NAMES = {
     "normal": "normal",
@@ -59,7 +51,7 @@ class FeatureScaler:
     scale_: np.ndarray
 
     @classmethod
-    def fit(cls, values: np.ndarray) -> FeatureScaler:
+    def fit(cls, values: np.ndarray) -> "FeatureScaler":
         if values.ndim != 2 or values.shape[0] == 0:
             raise ValueError("Scaler requires a non-empty 2D training array")
         mean = values.mean(axis=0, dtype=np.float64)
@@ -68,9 +60,9 @@ class FeatureScaler:
         return cls(mean_=mean, scale_=scale)
 
     def transform(self, values: np.ndarray) -> np.ndarray:
-        return (
-            (values.astype(np.float64, copy=False) - self.mean_) / self.scale_
-        ).astype(np.float32)
+        return ((values.astype(np.float64, copy=False) - self.mean_) / self.scale_).astype(
+            np.float32
+        )
 
 
 def _attack_type_from_filename(path: Path) -> str:
@@ -108,9 +100,7 @@ def _payload_tokens(fields: list[str], dlc: int) -> list[str]:
 
 def _parse_line(line: str, path: Path) -> tuple[dict[str, Any] | None, str | None]:
     try:
-        fields = [
-            field.strip() for field in next(csv.reader([line], skipinitialspace=True))
-        ]
+        fields = [field.strip() for field in next(csv.reader([line], skipinitialspace=True))]
     except (csv.Error, StopIteration):
         return None, "unparseable"
     if len(fields) < 4:
@@ -158,11 +148,7 @@ def _input_files(input_path: str | Path | None) -> list[Path]:
     if root.is_file():
         return [root]
     if root.is_dir():
-        return sorted(
-            path
-            for path in root.rglob("*")
-            if path.is_file() and path.name != ".gitkeep"
-        )
+        return sorted(path for path in root.rglob("*") if path.is_file() and path.name != ".gitkeep")
     raise FileNotFoundError(f"Dataset path does not exist: {root}")
 
 
@@ -203,17 +189,13 @@ def load_datasets(
     return frames, report
 
 
-def _sliding_frequency(
-    timestamps: np.ndarray, window_seconds: float = 1.0
-) -> np.ndarray:
+def _sliding_frequency(timestamps: np.ndarray, window_seconds: float = 1.0) -> np.ndarray:
     left_edges = np.searchsorted(timestamps, timestamps - window_seconds, side="left")
     right_edges = np.arange(1, len(timestamps) + 1)
     return (right_edges - left_edges).astype(np.int32)
 
 
-def _byte_entropy(
-    payload: np.ndarray, dlc: np.ndarray, chunk_size: int = 100_000
-) -> np.ndarray:
+def _byte_entropy(payload: np.ndarray, dlc: np.ndarray, chunk_size: int = 100_000) -> np.ndarray:
     entropy = np.zeros(len(payload), dtype=np.float32)
     columns = np.arange(8)
     for start in range(0, len(payload), chunk_size):
@@ -239,6 +221,7 @@ def extract_features(frames: pd.DataFrame) -> pd.DataFrame:
         return result
 
     timestamps = result["timestamp"].to_numpy(dtype=np.float64)
+    ids = result["can_id"].to_numpy()
     payload = result[BYTE_COLUMNS].to_numpy(dtype=np.uint8, copy=False)
     dlc = result["dlc"].to_numpy(dtype=np.uint8)
 
@@ -256,18 +239,14 @@ def extract_features(frames: pd.DataFrame) -> pd.DataFrame:
     payload_sums = np.sum(payload_values * valid, axis=1)
     denominators = np.maximum(dlc, 1)
     means = payload_sums / denominators
-    variances = (
-        np.sum(((payload_values - means[:, None]) ** 2) * valid, axis=1) / denominators
-    )
+    variances = np.sum(((payload_values - means[:, None]) ** 2) * valid, axis=1) / denominators
     result["payload_mean"] = np.where(dlc > 0, means, 0.0)
     result["payload_std"] = np.sqrt(np.maximum(variances, 0.0))
     result["byte_entropy"] = _byte_entropy(payload, dlc)
 
     previous_payload = grouped[BYTE_COLUMNS].shift().fillna(0).to_numpy(dtype=np.uint8)
     payload_xor = np.bitwise_xor(payload, previous_payload)
-    result["bit_flip_distance"] = _BYTE_POPCOUNT[payload_xor].sum(
-        axis=1, dtype=np.uint16
-    )
+    result["bit_flip_distance"] = _BYTE_POPCOUNT[payload_xor].sum(axis=1, dtype=np.uint16)
     result["changed_bytes"] = np.count_nonzero(payload_xor, axis=1).astype(np.uint8)
     result[BYTE_COLUMNS] = payload
     return result
@@ -315,9 +294,7 @@ def make_sequences(
     if seq_len <= 0 or stride <= 0:
         raise ValueError("seq_len and stride must be positive")
     if len(X) < seq_len:
-        return np.empty((0, seq_len, X.shape[1]), dtype=X.dtype), np.empty(
-            0, dtype=np.uint8
-        )
+        return np.empty((0, seq_len, X.shape[1]), dtype=X.dtype), np.empty(0, dtype=np.uint8)
 
     windows = sliding_window_view(X, seq_len, axis=0).transpose(0, 2, 1)[::stride]
     labels = sliding_window_view(y, seq_len)[::stride].any(axis=1).astype(np.uint8)
@@ -325,13 +302,9 @@ def make_sequences(
 
 
 def _main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Preprocess a Car-Hacking CAN dataset file"
-    )
+    parser = argparse.ArgumentParser(description="Preprocess a Car-Hacking CAN dataset file")
     parser.add_argument("input_path", help="Input dataset file or directory")
-    parser.add_argument(
-        "output_parquet", help="Destination feature dataset in Parquet format"
-    )
+    parser.add_argument("output_parquet", help="Destination feature dataset in Parquet format")
     args = parser.parse_args()
 
     frames, report = load_datasets(args.input_path)
