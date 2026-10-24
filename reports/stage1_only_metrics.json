@@ -1,0 +1,46 @@
+{
+  "metadata": {
+    "source_desc": "Synthetic fixture fallback (data\\samples\\fixture.csv, time-ordered 70/15 split)",
+    "is_fixture": true,
+    "train_frames": 2856,
+    "train_normal_frames": 1655,
+    "rules_yaml_path": "config\\rules.yaml"
+  },
+  "metrics": {
+    "total_frames": 612,
+    "clean_frames": 604,
+    "flagged_frames": 8,
+    "confusion_matrix": {
+      "tp": 0,
+      "fp": 8,
+      "tn": 604,
+      "fn": 0
+    },
+    "precision": 0.0,
+    "recall": 0.0,
+    "fpr": 0.013071895424836602,
+    "f1_score": 0.0,
+    "filtering_rate": 0.9869281045751634,
+    "latency_ms": {
+      "median": 0.037800054997205734,
+      "mean": 0.04044346347012941,
+      "p95": 0.07678014226257798,
+      "p99": 0.18195587210357175
+    },
+    "verdict_breakdown": {
+      "VIOLATION": 0,
+      "SUSPECT": 8,
+      "CLEAN": 604
+    },
+    "rule_hits": {
+      "R1": 0,
+      "R2": 0,
+      "R3": 0,
+      "R4": 0,
+      "R5": 0,
+      "R6": 8,
+      "R7": 0
+    },
+    "per_attack_recall": {}
+  }
+}
