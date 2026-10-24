@@ -1,0 +1,44 @@
+{
+  "dataset_name": "fixture (synthetic)",
+  "model_version": "rf_baseline_v1",
+  "split_sizes": {
+    "train": 3500,
+    "val": 750,
+    "test": 750
+  },
+  "metrics": {
+    "accuracy": 0.833333,
+    "macro_precision": 0.416666,
+    "macro_recall": 0.5,
+    "macro_f1": 0.454545,
+    "fpr": 0.0,
+    "fnr": 1.0,
+    "median_latency_ms": 31.6153,
+    "per_class": {
+      "0": {
+        "precision": 0.833333,
+        "recall": 1.0,
+        "f1": 0.909091,
+        "support": 625.0
+      },
+      "1": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 125.0
+      }
+    },
+    "confusion_matrix": [
+      [
+        625,
+        0
+      ],
+      [
+        125,
+        0
+      ]
+    ],
+    "all_normal_baseline_accuracy": 0.833333
+  },
+  "generated_at": "2026-10-24T12:43:23.751504+00:00"
+}

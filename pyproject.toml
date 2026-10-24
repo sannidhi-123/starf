@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stark"
+version = "0.1.0"
+description = "Hybrid Anomaly Detection for Intra-Vehicular CAN-Bus Communication"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas",
+    "numpy",
+    "pyarrow",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.optional-dependencies]
+eval = ["imbalanced-learn==0.14.2"]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/app/api/routes/*.py" = ["B008"]
+
