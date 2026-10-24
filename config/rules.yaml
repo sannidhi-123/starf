@@ -1,5 +1,5 @@
 # ==============================================================================
-# STARK (Smart Traffic Anomaly Recognition Kernel)
+# STARF (Smart Traffic Anomaly Recognition Framework)
 # Stage 1 Rule Engine Configuration Skeleton
 # ==============================================================================
 # File: config/rules.yaml
@@ -19,8 +19,8 @@ vehicle_profile: "generic_can_profile"
 global_tuned_thresholds:
   # R2: Factor applied to p01_dt[ID] to define the impossible inter-arrival floor.
   # Threshold formula: dt_same_id < max(physical_min_dt, p01_dt[id] * r2_factor)
-  # Typical range: [0.15, 0.30]. Value below is TBD placeholder.
-  r2_factor: 0.5
+  # Typical range: [0.15, 0.30]. Value below is tuned on validation partition.
+  r2_factor: 0.4
 
   # R3: Global aggregate bus message rate threshold in frames per second (fps).
   # Threshold formula: msg_rate_50ms > r3_global_rate
@@ -30,8 +30,8 @@ global_tuned_thresholds:
 
   # R7: Factor applied to p99_dt[ID] to define the silence watchdog timeout.
   # Threshold formula: dt_same_id > p99_dt[id] * r7_factor
-  # Typical range: [3.0, 5.0]. Value below is TBD placeholder.
-  r7_factor: 5.0
+  # Typical range: [3.0, 5.0]. Value below is tuned on validation partition.
+  r7_factor: 4.0
 
   # R2: Hard physical transmission duration floor (in seconds) for CAN 2.0B at 500 kbps.
   # Domain constraint: ~111 to 135 bit times => ~0.220 to 0.270 ms.
