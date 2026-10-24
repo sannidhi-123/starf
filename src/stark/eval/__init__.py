@@ -15,4 +15,3 @@ __all__ = [
     "compute_rates",
     "generate_metrics_report",
 ]
-

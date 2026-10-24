@@ -80,7 +80,7 @@ def clean_canonical_df(
     res = df.copy()
 
     # 1. Type conversions: Ensure can_id is integer (hex strings converted to decimal)
-    if res["can_id"].dtype == object:
+    if pd.api.types.is_string_dtype(res["can_id"].dtype):
 
         def _parse_id(val: Any) -> int:
             if isinstance(val, str):

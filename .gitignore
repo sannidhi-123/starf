@@ -14,3 +14,4 @@ data/*
 !data/.gitkeep
 coverage.xml
 .coverage
+/work/

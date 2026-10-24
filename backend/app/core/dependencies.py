@@ -7,5 +7,7 @@ from app.integrations.real import RealIntegration
 
 
 async def get_integration() -> AsyncIterator[Integration]:
-    implementation = MockIntegration() if settings.integration_mode == "mock" else RealIntegration()
+    implementation = (
+        MockIntegration() if settings.integration_mode == "mock" else RealIntegration()
+    )
     yield implementation
