@@ -14,3 +14,8 @@ data/*
 !data/.gitkeep
 coverage.xml
 .coverage
+
+backend/.venv/
+
+/backend/.venv/
+*.egg-info/

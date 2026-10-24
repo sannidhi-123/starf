@@ -8,7 +8,9 @@ def _async_url(url: str) -> str:
     return url.replace("sqlite:///", "sqlite+aiosqlite:///")
 
 
-engine: AsyncEngine = create_async_engine(_async_url(settings.database_url), echo=settings.debug)
+engine: AsyncEngine = create_async_engine(
+    _async_url(settings.database_url), echo=settings.debug
+)
 
 
 async def init_db() -> None:

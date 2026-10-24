@@ -139,7 +139,9 @@ class CANFrameInput(BaseModel):
         if isinstance(v, (list, tuple)):
             for idx, b in enumerate(v):
                 if not isinstance(b, int) or not (0 <= b <= 255):
-                    raise ValueError(f"Payload byte at index {idx} ({b!r}) must be an integer between 0 and 255")
+                    raise ValueError(
+                        f"Payload byte at index {idx} ({b!r}) must be an integer between 0 and 255"
+                    )
             return "".join(f"{b:02X}" for b in v)
         if isinstance(v, bytes):
             return v.hex().upper()
@@ -148,9 +150,13 @@ class CANFrameInput(BaseModel):
             if clean and not all(c in "0123456789ABCDEF" for c in clean):
                 raise ValueError(f"Invalid characters in hex payload string: {v!r}")
             if len(clean) % 2 != 0:
-                raise ValueError(f"Payload hex string must contain an even number of hex digits, got {len(clean)}")
+                raise ValueError(
+                    f"Payload hex string must contain an even number of hex digits, got {len(clean)}"
+                )
             return clean
-        raise ValueError(f"Unsupported payload type {type(v).__name__}. Expected hex string, bytes, or List[int].")
+        raise ValueError(
+            f"Unsupported payload type {type(v).__name__}. Expected hex string, bytes, or List[int]."
+        )
 
     @model_validator(mode="after")
     def validate_payload_dlc_match(self) -> "CANFrameInput":
@@ -165,7 +171,9 @@ class CANFrameInput(BaseModel):
     @property
     def can_id_hex(self) -> str:
         """Formatted hexadecimal representation of the CAN ID."""
-        return f"0x{self.can_id:03X}" if self.can_id <= 0x7FF else f"0x{self.can_id:08X}"
+        return (
+            f"0x{self.can_id:03X}" if self.can_id <= 0x7FF else f"0x{self.can_id:08X}"
+        )
 
     @property
     def is_extended(self) -> bool:
@@ -177,7 +185,9 @@ class CANFrameInput(BaseModel):
         """Byte array representation of payload."""
         if not self.payload:
             return []
-        return [int(self.payload[i : i + 2], 16) for i in range(0, len(self.payload), 2)]
+        return [
+            int(self.payload[i : i + 2], 16) for i in range(0, len(self.payload), 2)
+        ]
 
 
 # ============================================================================
@@ -257,22 +267,30 @@ class DetectionRuleConfig(BaseModel):
         if v is None:
             return None
         if not isinstance(v, dict):
-            raise ValueError("expected_dlc_map must be a dictionary mapping CAN ID to expected DLC")
+            raise ValueError(
+                "expected_dlc_map must be a dictionary mapping CAN ID to expected DLC"
+            )
         parsed_map: Dict[int, int] = {}
         for k, dlc_val in v.items():
             parsed_id = parse_can_id_value(k)
             if not isinstance(dlc_val, int) or not (0 <= dlc_val <= 8):
-                raise ValueError(f"Expected DLC for CAN ID {parsed_id} must be an integer between 0 and 8, got {dlc_val!r}")
+                raise ValueError(
+                    f"Expected DLC for CAN ID {parsed_id} must be an integer between 0 and 8, got {dlc_val!r}"
+                )
             parsed_map[parsed_id] = dlc_val
         return parsed_map
 
     @model_validator(mode="after")
     def validate_rule_ranges(self) -> "DetectionRuleConfig":
         if self.min_dlc > self.max_dlc:
-            raise ValueError(f"min_dlc ({self.min_dlc}) cannot exceed max_dlc ({self.max_dlc}).")
+            raise ValueError(
+                f"min_dlc ({self.min_dlc}) cannot exceed max_dlc ({self.max_dlc})."
+            )
         if self.min_delta_t is not None and self.max_delta_t is not None:
             if self.min_delta_t > self.max_delta_t:
-                raise ValueError(f"min_delta_t ({self.min_delta_t}) cannot exceed max_delta_t ({self.max_delta_t}).")
+                raise ValueError(
+                    f"min_delta_t ({self.min_delta_t}) cannot exceed max_delta_t ({self.max_delta_t})."
+                )
         return self
 
 
@@ -313,7 +331,9 @@ class DetectionRunRequest(BaseModel):
     @model_validator(mode="after")
     def validate_data_source(self) -> "DetectionRunRequest":
         if not self.dataset_id and not self.frames:
-            raise ValueError("Either 'dataset_id' or 'frames' must be provided in DetectionRunRequest.")
+            raise ValueError(
+                "Either 'dataset_id' or 'frames' must be provided in DetectionRunRequest."
+            )
         return self
 
 
