@@ -34,3 +34,7 @@ A grid search was executed over the tunable global thresholds in `config/rules.y
 - `r2_factor = 0.4` narrows the inter-arrival tolerance safely above the physical transmission minimum (`physical_min_dt = 0.00020 s`) while guarding against injection bursts with zero false triggers on benign traffic.
 - `r7_factor = 4.0` provides a tightened silence watchdog threshold compared to the loose default (5.0), while comfortably accommodating natural bus jitter without false alarms.
 - The resulting FPR of 1.31% meets the Day 12 success criterion (< 2.0% validation FPR) with 98.69% of frames cleanly filtered.
+
+## 2026-10-25: Hybrid Fusion & Stage 2 Demo Stub (Day 15)
+
+Day 15 (demo sprint): Stage2 is a deterministic stub; real LightGBM from Person 3 replaces it.
