@@ -1,4 +1,4 @@
-{
+{ "latency_note": "Superseded: latency re-measured with n_jobs=1 in reports/standard_split_baseline.json (p50 3.5 ms). The values in this file were measured with n_jobs=-1 and include parallel overhead.",
   "dataset_name": "fixture (synthetic, one capture)",
   "generated_at": "2026-10-24T16:32:54.661534+00:00",
   "split_sizes": {
