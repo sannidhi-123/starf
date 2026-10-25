@@ -127,7 +127,15 @@ class StreamingFeatures:
         dlc: int = int(raw_dlc) if raw_dlc is not None else 0
 
         ts_raw = frame.get("timestamp", frame.get("Timestamp", frame.get("ts", _MISSING)))
-        timestamp: Optional[float] = float(ts_raw) if ts_raw is not _MISSING else None
+        timestamp: Optional[float] = None
+        if ts_raw is not _MISSING and ts_raw is not None:
+            try:
+                _f_val = float(ts_raw)
+                import math
+                if not math.isnan(_f_val):
+                    timestamp = _f_val
+            except (ValueError, TypeError):
+                timestamp = None
 
         # ------------------------------------------------------------------ #
         # 1. Extract payload bytes (for R5/R6 features)

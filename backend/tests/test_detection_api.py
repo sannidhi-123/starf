@@ -25,7 +25,7 @@ from app.main import app
 
 
 # ---------------------------------------------------------------------------
-# DB setup — patch engine before TestClient starts the lifespan
+# DB setup â€” patch engine before TestClient starts the lifespan
 # ---------------------------------------------------------------------------
 
 _ASYNC_URL = f"sqlite+aiosqlite:///{_TMP_DB_PATH}"
@@ -87,7 +87,7 @@ def test_list_datasets(client):
 
 
 # ---------------------------------------------------------------------------
-# POST /api/v1/detection/run — DoS dataset
+# POST /api/v1/detection/run â€” DoS dataset
 # ---------------------------------------------------------------------------
 
 
@@ -169,3 +169,45 @@ def test_alerts_summary_after_dos_run(client):
     assert resp.status_code == 200
     body = resp.json()
     assert body["total"] > 0
+
+
+def test_run_empty_frames_422(client):
+    """Empty frames list returns 422 Unprocessable Entity."""
+    resp = client.post("/api/v1/detection/run", json={"frames": []})
+    assert resp.status_code == 422
+
+
+def test_run_invalid_dlc_422(client):
+    """DLC > 8 violates standard CAN bounds and returns 422."""
+    resp = client.post(
+        "/api/v1/detection/run",
+        json={"frames": [{"timestamp": 0.1, "can_id": 0x140, "dlc": 9}]},
+    )
+    assert resp.status_code == 422
+
+
+def test_run_mismatched_payload_dlc_422(client):
+    """Payload hex length not matching DLC returns 422."""
+    resp = client.post(
+        "/api/v1/detection/run",
+        json={"frames": [{"timestamp": 0.1, "can_id": 0x140, "dlc": 2, "payload": "01020304"}]},
+    )
+    assert resp.status_code == 422
+
+
+def test_run_negative_timestamp_422(client):
+    """Negative timestamp returns 422."""
+    resp = client.post(
+        "/api/v1/detection/run",
+        json={"frames": [{"timestamp": -0.05, "can_id": 0x140, "dlc": 8}]},
+    )
+    assert resp.status_code == 422
+
+
+def test_get_recent_runs(client):
+    """GET /api/v1/detection/runs returns items list."""
+    resp = client.get("/api/v1/detection/runs")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "items" in body
+    assert isinstance(body["items"], list)

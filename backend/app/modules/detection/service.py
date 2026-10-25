@@ -78,11 +78,21 @@ def _csv_to_frames(path: Path) -> List[Dict[str, Any]]:
                         pass
         payload = "".join(f"{b:02X}" for b in byte_vals)
 
+        try:
+            ts_val = float(ts_raw)
+        except (ValueError, TypeError):
+            ts_val = 0.0
+
+        try:
+            dlc_val = int(dlc_raw)
+        except (ValueError, TypeError):
+            dlc_val = len(byte_vals)
+
         frames.append(
             {
-                "timestamp": float(ts_raw),
+                "timestamp": ts_val,
                 "can_id": str(can_id_raw),
-                "dlc": int(dlc_raw),
+                "dlc": dlc_val,
                 "payload": payload,
             }
         )

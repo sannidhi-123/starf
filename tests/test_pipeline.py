@@ -1,4 +1,4 @@
-"""Tests for stark.pipeline — StreamingFeatures causality and DetectionPipeline results."""
+"""Tests for stark.pipeline â€” StreamingFeatures causality and DetectionPipeline results."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ SAMPLES_DIR = REPO_ROOT / "data" / "samples"
 
 
 # ============================================================================
-# StreamingFeatures — causality tests
+# StreamingFeatures â€” causality tests
 # ============================================================================
 
 
@@ -34,7 +34,7 @@ def test_streaming_features_dt_computed_for_second_frame():
 
 
 def test_streaming_features_dt_per_id_independent():
-    """dt_same_id tracks each CAN ID independently — no cross-ID contamination."""
+    """dt_same_id tracks each CAN ID independently â€” no cross-ID contamination."""
     sf = StreamingFeatures()
     sf.update({"timestamp": 0.0, "can_id": 0x100, "dlc": 8})
     sf.update({"timestamp": 0.5, "can_id": 0x200, "dlc": 8})  # different ID
@@ -52,7 +52,7 @@ def test_streaming_features_msg_rate_50ms():
     r = sf.update({"timestamp": 0.020, "can_id": 0x300, "dlc": 8})
     assert r["msg_rate_50ms"] == 3
 
-    # Frame far in the future — window should be 1
+    # Frame far in the future â€” window should be 1
     r2 = sf.update({"timestamp": 1.000, "can_id": 0x100, "dlc": 8})
     assert r2["msg_rate_50ms"] == 1
 
@@ -88,7 +88,7 @@ def test_streaming_features_hamming_distance():
 
 
 def test_streaming_features_reset_clears_state():
-    """reset() starts fresh — dt_same_id should be None again after reset."""
+    """reset() starts fresh â€” dt_same_id should be None again after reset."""
     sf = StreamingFeatures()
     sf.update({"timestamp": 0.0, "can_id": 0x100, "dlc": 8})
     sf.reset()
@@ -97,7 +97,7 @@ def test_streaming_features_reset_clears_state():
 
 
 # ============================================================================
-# DetectionPipeline — full integration tests
+# DetectionPipeline â€” full integration tests
 # ============================================================================
 
 
@@ -164,3 +164,67 @@ def test_pipeline_normal_sample_few_alerts(pipeline):
         f"Normal dataset alert rate {alert_rate:.2%} exceeds 3% threshold "
         f"({result['alert_count']}/{total} alerts)"
     )
+
+
+def test_streaming_features_corrupted_inputs():
+    """StreamingFeatures handles malformed, NaN, and non-numeric inputs without crashing."""
+    sf = StreamingFeatures()
+
+    # Corrupt string timestamp -> should gracefully become None
+    r1 = sf.update({"timestamp": "INVALID_TS", "can_id": "0x140", "dlc": "8"})
+    assert r1["dt_same_id"] is None
+    assert r1["can_id"] == 0x140
+    assert r1["dlc"] == 8
+
+    # Float NaN timestamp -> should gracefully become None
+    r2 = sf.update({"timestamp": float("nan"), "can_id": "0x140", "dlc": 8})
+    assert r2["dt_same_id"] is None
+
+    # Empty payload, missing fields
+    r3 = sf.update({})
+    assert r3["can_id"] == 0
+    assert r3["dlc"] == 0
+    assert r3["dt_same_id"] is None
+
+
+def test_pipeline_ground_truth_dos_accuracy(pipeline):
+    """Verify exact recall on demo_dos_attack.csv: all 100 Flag==T frames detected."""
+    import pandas as pd
+
+    df = pd.read_csv(SAMPLES_DIR / "demo_dos_attack.csv", dtype={"CAN ID": str})
+    frames = []
+    for _, row in df.iterrows():
+        frames.append({
+            "timestamp": float(row["Timestamp"]),
+            "can_id": str(row["CAN ID"]),
+            "dlc": int(row["DLC"]),
+            "payload": "".join(f"{int(row[f'DATA[{i}]'], 16):02X}" for i in range(8)),
+        })
+
+    res = pipeline.run(frames)
+    assert res["total_frames"] == 300
+    assert res["alert_count"] == 100
+    assert res["normal_count"] == 200
+    assert res["by_label"].get("dos") == 100
+    assert res["by_label"].get("normal") == 200
+
+
+def test_pipeline_ground_truth_normal_cleanliness(pipeline):
+    """Verify zero false alarms on demo_normal.csv."""
+    import pandas as pd
+
+    df = pd.read_csv(SAMPLES_DIR / "demo_normal.csv", dtype={"CAN ID": str})
+    frames = []
+    for _, row in df.iterrows():
+        frames.append({
+            "timestamp": float(row["Timestamp"]),
+            "can_id": str(row["CAN ID"]),
+            "dlc": int(row["DLC"]),
+            "payload": "".join(f"{int(row[f'DATA[{i}]'], 16):02X}" for i in range(8)),
+        })
+
+    res = pipeline.run(frames)
+    assert res["total_frames"] == 300
+    assert res["normal_count"] == 300
+    assert res["alert_count"] == 0
+    assert res["by_label"] == {"normal": 300}

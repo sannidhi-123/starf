@@ -189,8 +189,9 @@ def r2_impossible_dt(
     if p01_dt is None or p01_dt <= 0:
         return None
 
-    # Extract r2_factor
+    # Extract r2_factor and physical_min_dt
     r2_factor = 0.5
+    physical_min = 0.00020
     if cfg is not None:
         factor_val = getattr(cfg, "r2_factor", None)
         if factor_val is None and isinstance(cfg, dict):
@@ -200,12 +201,20 @@ def r2_impossible_dt(
         if factor_val is not None:
             r2_factor = float(factor_val)
 
-    learned_floor = p01_dt * r2_factor
+        pmin_val = getattr(cfg, "physical_min_dt", None)
+        if pmin_val is None and isinstance(cfg, dict):
+            pmin_val = cfg.get("physical_min_dt")
+            if pmin_val is None:
+                pmin_val = cfg.get("global_tuned_thresholds", {}).get("physical_min_dt")
+        if pmin_val is not None:
+            physical_min = float(pmin_val)
+
+    learned_floor = max(physical_min, p01_dt * r2_factor)
 
     if dt_same_id < learned_floor:
         x_ms = dt_same_id * 1000.0
         y_ms = learned_floor * 1000.0
-        reason = f"Δt={x_ms:.1f}ms below learned floor {y_ms:.1f}ms"
+        reason = f"Î”t={x_ms:.1f}ms below learned floor {y_ms:.1f}ms"
         return RuleHit(rule_id="R2", reason=reason, weight=3, verdict="VIOLATION")
 
     return None
@@ -528,7 +537,7 @@ def r7_silence(
 
     can_id, _ = _extract_frame_attributes(f)
 
-    # Check periodicity — R7 only applies to periodic ECUs
+    # Check periodicity â€” R7 only applies to periodic ECUs
     is_periodic = False
     if hasattr(bp, "is_periodic"):
         val = bp.is_periodic
@@ -591,6 +600,74 @@ def r7_silence(
         return RuleHit(rule_id="R7", reason=reason, weight=1, verdict="SUSPECT")
 
     return None
+
+
+def check_silence_timeouts(
+    last_seen_dict: dict[int, float],
+    current_timestamp: float,
+    bp: Optional[Any] = None,
+    cfg: Optional[Any] = None,
+) -> list[RuleHit]:
+    """Time-based silence watchdog check for periodic ECUs.
+
+    Evaluates whether any known periodic CAN ID has stopped transmitting
+    based on elapsed time since its last observed frame, even when no new
+    frame has arrived for that ID.
+
+    Args:
+        last_seen_dict: Mapping of CAN ID -> float timestamp of last seen frame.
+        current_timestamp: Current bus virtual timestamp or wall-clock epoch.
+        bp: BaselineProfiler or baseline dict containing is_periodic and p99_dt.
+        cfg: Rule configuration (containing r7_factor).
+
+    Returns:
+        List of RuleHit instances for timed-out periodic IDs.
+    """
+    if bp is None:
+        return []
+
+    r7_factor = 4.0
+    if cfg is not None:
+        factor_val = getattr(cfg, "r7_factor", None)
+        if factor_val is None and isinstance(cfg, dict):
+            factor_val = cfg.get("r7_factor")
+            if factor_val is None:
+                factor_val = cfg.get("global_tuned_thresholds", {}).get("r7_factor")
+        if factor_val is not None:
+            r7_factor = float(factor_val)
+
+    periodic_map = getattr(bp, "is_periodic", {})
+    p99_map = getattr(bp, "p99_dt", {})
+
+    hits: list[RuleHit] = []
+    for can_id, last_ts in last_seen_dict.items():
+        is_periodic = False
+        if hasattr(periodic_map, "get"):
+            is_periodic = bool(periodic_map.get(can_id, False))
+        elif isinstance(periodic_map, dict):
+            is_periodic = bool(periodic_map.get(can_id, False))
+
+        if not is_periodic:
+            continue
+
+        p99_dt = None
+        if hasattr(p99_map, "get"):
+            p99_dt = p99_map.get(can_id)
+        elif isinstance(p99_map, dict):
+            p99_dt = p99_map.get(can_id)
+
+        if p99_dt is None or p99_dt <= 0:
+            continue
+
+        timeout = p99_dt * r7_factor
+        elapsed = current_timestamp - last_ts
+        if elapsed > timeout:
+            x_ms = elapsed * 1000.0
+            t_ms = timeout * 1000.0
+            reason = f"watchdog timeout for 0x{can_id:03X}: elapsed {x_ms:.1f}ms exceeds {t_ms:.1f}ms"
+            hits.append(RuleHit(rule_id="R7", reason=reason, weight=1, verdict="SUSPECT"))
+
+    return hits
 
 
 # Ordered list of all 7 Stage 1 rule functions for RuleEngine iteration.

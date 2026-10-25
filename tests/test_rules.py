@@ -24,6 +24,7 @@ from stark.rules.definitions import (
     r5_repetition,
     r6_payload,
     r7_silence,
+    check_silence_timeouts,
 )
 from stark.rules.engine import RuleEngine, RuleVerdict
 from stark.utils.exceptions import RuleConfigError
@@ -114,6 +115,23 @@ def test_r2_impossible_dt_quiet():
 
     # Stays quiet when dt_same_id is missing (e.g. initial frame)
     assert r2_impossible_dt({"can_id": 0x140}, bp=bp, cfg=cfg) is None
+
+
+def test_r2_physical_min_dt_floor():
+    """R2 enforces physical_min_dt (0.2ms) even when p01_dt * r2_factor is smaller."""
+    bp = SimpleNamespace(p01_dt=0.00025)
+    # 0.00025 * 0.4 = 0.00010s, which is below physical_min_dt 0.00020s (0.2ms)
+    cfg = {"r2_factor": 0.4, "physical_min_dt": 0.00020}
+
+    # Arrival at 0.15ms (0.00015s) is above 0.10ms but physically impossible on CAN (< 0.20ms)
+    frame_impossible = {"can_id": 0x140, "dt_same_id": 0.00015}
+    hit = r2_impossible_dt(frame_impossible, bp=bp, cfg=cfg)
+
+    assert hit is not None
+    assert hit.rule_id == "R2"
+    assert hit.weight == 3
+    assert hit.verdict == "VIOLATION"
+    assert "below learned floor 0.2ms" in hit.reason
 
 
 def test_r3_flooding_fires():
@@ -286,6 +304,35 @@ def test_r7_silence_quiet():
 
     # bp=None -> stays quiet
     assert r7_silence({"can_id": 0x140, "dt_same_id": 0.200}, None, cfg) is None
+
+
+def test_r7_time_based_watchdog_monitoring():
+    """R7 time-based watchdog detects missing messages even when no new frame arrives for that ID."""
+    bp = SimpleNamespace(
+        is_periodic={0x140: True, 0x260: True, 0x999: False},
+        p99_dt={0x140: 0.010, 0x260: 0.020, 0x999: 0.050},
+    )
+    cfg = {"r7_factor": 4.0}
+
+    # At t=1.000, 0x140 and 0x260 transmitted
+    last_seen = {0x140: 1.000, 0x260: 1.000, 0x999: 1.000}
+
+    # At t=1.020 (20ms later):
+    # 0x140 timeout is 10ms * 4 = 40ms -> 20ms < 40ms -> no timeout
+    # 0x260 timeout is 20ms * 4 = 80ms -> 20ms < 80ms -> no timeout
+    hits_ok = check_silence_timeouts(last_seen, current_timestamp=1.020, bp=bp, cfg=cfg)
+    assert len(hits_ok) == 0
+
+    # At t=1.050 (50ms later):
+    # 0x140 elapsed is 50ms > 40ms timeout -> FIRES R7!
+    # 0x260 elapsed is 50ms < 80ms timeout -> quiet
+    # 0x999 is aperiodic -> quiet
+    hits_timeout = check_silence_timeouts(last_seen, current_timestamp=1.050, bp=bp, cfg=cfg)
+    assert len(hits_timeout) == 1
+    assert hits_timeout[0].rule_id == "R7"
+    assert hits_timeout[0].weight == 1
+    assert "watchdog timeout for 0x140" in hits_timeout[0].reason
+    assert "elapsed 50.0ms exceeds 40.0ms" in hits_timeout[0].reason
 
 
 def test_rules_list_has_all_seven():
