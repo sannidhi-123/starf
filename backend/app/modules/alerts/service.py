@@ -122,6 +122,13 @@ class AlertService:
     # Delete helpers
     # ------------------------------------------------------------------
 
+    async def delete_one(self, alert_id: int) -> bool:
+        """Delete a single alert by ID. Returns True if found and deleted."""
+        async with SessionLocal() as session:
+            result = await session.execute(delete(Alert).where(Alert.id == alert_id))
+            await session.commit()
+        return bool(result.rowcount and result.rowcount > 0)
+
     async def clear(self) -> int:
         """Delete **all** alert rows.  Returns the number of rows deleted."""
         async with SessionLocal() as session:

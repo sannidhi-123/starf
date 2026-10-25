@@ -38,6 +38,7 @@ def _load_pipeline():
 
 # Module-level singleton — built on first request, reused thereafter.
 _pipeline = None
+_recent_runs: List[Dict[str, Any]] = []
 
 
 def _get_pipeline():
@@ -143,8 +144,9 @@ class DetectionService:
         result = pipeline.run(raw_frames)
 
         # ---- Persist alerts ----
-        if result["alerts"]:
-            await self._alert_svc.add_many(run_id, result["alerts"])
+        alerts_list = result["alerts"]
+        if alerts_list:
+            await self._alert_svc.add_many(run_id, alerts_list)
 
         # ---- Build summary ----
         summary = {
@@ -153,9 +155,29 @@ class DetectionService:
             "by_severity": result["by_severity"],
         }
 
-        return {
+        # Format alerts preview with can_id_hex
+        formatted_alerts = []
+        for a in alerts_list[:100]:
+            cid = a.get("can_id", 0)
+            formatted_alerts.append(
+                {
+                    "can_id": cid,
+                    "can_id_hex": f"0x{cid:04X}" if isinstance(cid, int) else str(cid),
+                    "timestamp": a.get("timestamp", 0.0),
+                    "label": a.get("label", "normal"),
+                    "confidence": a.get("confidence", 0.0),
+                    "stage": a.get("stage", "stage1"),
+                    "severity_level": a.get("severity_level", "LOW"),
+                    "severity_score": a.get("severity_score", 0),
+                    "rule_ids": a.get("rule_ids", ""),
+                    "reason": a.get("reason", ""),
+                }
+            )
+
+        resp = {
             "job_id": run_id,
             "run_id": run_id,
+            "dataset_id": request.dataset_id,
             "status": JobStatus.COMPLETED,
             "total_frames": result["total_frames"],
             "normal_count": result["normal_count"],
@@ -167,4 +189,16 @@ class DetectionService:
             "rule_hits": result["rule_hits"],
             "execution_time_ms": result["execution_time_ms"],
             "summary": summary,
+            "alerts": formatted_alerts,
         }
+
+        # Store in circular recent runs buffer
+        _recent_runs.insert(0, resp)
+        if len(_recent_runs) > 50:
+            _recent_runs.pop()
+
+        return resp
+
+    def get_recent_runs(self) -> List[Dict[str, Any]]:
+        """Return list of recent detection runs."""
+        return _recent_runs

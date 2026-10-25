@@ -21,3 +21,9 @@ _svc = DetectionService()
 async def run_detection(request: DetectionRunRequest) -> dict:
     """Run the end-to-end CAN-frame anomaly detection pipeline."""
     return await _svc.run(request)
+
+
+@router.get("/runs")
+async def get_recent_runs() -> dict:
+    """Return historical detection runs executed during this session."""
+    return {"items": _svc.get_recent_runs()}

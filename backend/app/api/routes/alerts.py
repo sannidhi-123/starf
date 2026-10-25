@@ -49,3 +49,10 @@ async def delete_alerts() -> dict:
     """Purge all alert rows from the database."""
     n = await _svc.clear()
     return {"deleted": n}
+
+
+@router.delete("/{alert_id}")
+async def delete_alert(alert_id: int) -> dict:
+    """Delete a single alert row by ID."""
+    deleted = await _svc.delete_one(alert_id)
+    return {"deleted": deleted, "id": alert_id}
