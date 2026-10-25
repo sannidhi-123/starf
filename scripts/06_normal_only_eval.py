@@ -78,8 +78,7 @@ def main() -> None:
 
     for attack in ATTACKS:
         runs = [
-            run_fold(normal_train, normal_test, attacks, attack, seed)
-            for seed in SEEDS
+            run_fold(normal_train, normal_test, attacks, attack, seed) for seed in SEEDS
         ]
         rates = [r["detected_rate"] for r in runs]
         fars = [r["false_alarm_rate"] for r in runs]
