@@ -63,4 +63,4 @@ ignore = [
 asyncio_mode = "auto"
 testpaths = ["backend/tests", "tests"]
 pythonpath = ["backend", "src"]
-asyncio_default_fixture_loop_scope = "function"
+asyncio_default_fixture_loop_scope = "module"
