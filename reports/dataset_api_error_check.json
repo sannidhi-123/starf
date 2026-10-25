@@ -1,0 +1,77 @@
+{
+  "no_file_field": {
+    "status_code": 422,
+    "detail": "A CSV file is required in the 'file' field.",
+    "check_passed": true
+  },
+  "wrong_extension": {
+    "status_code": 400,
+    "detail": "The uploaded file must have a .csv extension.",
+    "check_passed": true
+  },
+  "empty_csv": {
+    "status_code": 422,
+    "detail": "The CSV file is empty.",
+    "check_passed": true
+  },
+  "header_without_data": {
+    "status_code": 422,
+    "detail": "The CSV file has no data rows.",
+    "check_passed": true
+  },
+  "wrong_field_count": {
+    "status_code": 422,
+    "detail": "Row 2: expected 17 fields, found 3.",
+    "check_passed": true
+  },
+  "can_id_out_of_range": {
+    "status_code": 422,
+    "detail": "Row 2: can_id must be between 0 and 0x1FFFFFFF.",
+    "check_passed": true
+  },
+  "dlc_out_of_range": {
+    "status_code": 422,
+    "detail": "Row 2: dlc must be an integer from 0 to 8.",
+    "check_passed": true
+  },
+  "required_payload_empty": {
+    "status_code": 422,
+    "detail": "Row 2: data_0 must be a non-empty integer from 0 to 255 when index is less than dlc.",
+    "check_passed": true
+  },
+  "negative_timestamp": {
+    "status_code": 422,
+    "detail": "Row 2: timestamp must be a finite, non-negative number.",
+    "check_passed": true
+  },
+  "invalid_is_remote": {
+    "status_code": 422,
+    "detail": "Row 2: is_remote must be True, False, 1, or 0 (case-insensitive).",
+    "check_passed": true
+  },
+  "invalid_label": {
+    "status_code": 422,
+    "detail": "Row 2: label must be 0 or 1.",
+    "check_passed": true
+  },
+  "invalid_can_id_format": {
+    "status_code": 422,
+    "detail": "Row 2: can_id must be an integer in decimal or 0x-prefixed hexadecimal form.",
+    "check_passed": true
+  },
+  "nonzero_trailing_payload": {
+    "status_code": 422,
+    "detail": "Row 2: data_7 must be empty or 0 when index is greater than or equal to dlc.",
+    "check_passed": true
+  },
+  "too_large": {
+    "status_code": 413,
+    "detail": "The uploaded file exceeds the 26214400-byte limit.",
+    "check_passed": true
+  },
+  "unknown_dataset_id": {
+    "status_code": 404,
+    "detail": "Dataset 'not-a-real-id' was not found.",
+    "check_passed": true
+  }
+}
