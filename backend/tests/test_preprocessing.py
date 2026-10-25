@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-
 from app.modules.dataset.preprocessing import (
     NUMERIC_FEATURES,
     extract_features,
@@ -31,7 +30,9 @@ def test_dlc_mismatch_is_removed_and_reported(tmp_path):
 
 def test_duplicate_frames_are_kept(tmp_path):
     duplicate = "0.0, 123, 2, 01, 02, T"
-    frames, report = load_datasets(_write_frames(tmp_path / "DoS.txt", [duplicate, duplicate]))
+    frames, report = load_datasets(
+        _write_frames(tmp_path / "DoS.txt", [duplicate, duplicate])
+    )
 
     assert len(frames) == 2
     assert frames["y"].tolist() == [1, 1]
