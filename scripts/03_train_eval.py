@@ -115,7 +115,7 @@ def evaluate(*, use_smote: bool, seed: int) -> dict[str, Any]:
         "n_estimators": 100,
         "class_weight": "balanced",
         "random_state": seed,
-        "n_jobs": -1,
+        "n_jobs": 1,
         "decision_threshold": 0.5,
     }
     model = RandomForestClassifier(

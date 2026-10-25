@@ -167,7 +167,7 @@ def _fit_model(
         n_estimators=100,
         class_weight="balanced",
         random_state=seed,
-        n_jobs=-1,
+        n_jobs=1,
     )
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -208,7 +208,7 @@ def evaluate_fuzzy_threshold(
         n_estimators=100,
         class_weight="balanced",
         random_state=seed,
-        n_jobs=-1,
+        n_jobs=1,
     )
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -328,12 +328,18 @@ def evaluate_configuration(
     return {
         "smote_used": use_smote,
         "seeds": seeds,
+        "threshold_status": "invalid_method",
+        "threshold_note": (
+            "Threshold selected on validation data containing only training "
+            "attack types, so it does not measure unseen-attack detection. "
+            "Do not use."
+        ),
         "model_configuration": {
             "estimator": "RandomForestClassifier",
             "n_estimators": 100,
             "class_weight": "balanced",
             "random_state": "per-seed",
-            "n_jobs": -1,
+            "n_jobs": 1,
             "decision_threshold": 0.5,
         },
         "results_by_seed": results_by_seed,
