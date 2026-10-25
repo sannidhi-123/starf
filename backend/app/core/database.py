@@ -1,5 +1,19 @@
+"""Async SQLAlchemy engine, declarative base and session factory.
+
+All ORM models must inherit from ``Base``.  Tables are created inside
+``init_db()`` which is called once at application startup via the lifespan hook.
+"""
+
+from __future__ import annotations
+
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import settings
 
@@ -12,7 +26,21 @@ engine: AsyncEngine = create_async_engine(
     _async_url(settings.database_url), echo=settings.debug
 )
 
+SessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
+    bind=engine,
+    expire_on_commit=False,
+)
+
+
+class Base(DeclarativeBase):
+    """Shared SQLAlchemy 2.0 declarative base for all ORM models."""
+
 
 async def init_db() -> None:
+    """Verify DB connectivity and create all ORM-registered tables."""
+    # Import models so SQLAlchemy registers them with Base.metadata
+    import app.modules.alerts.models  # noqa: F401
+
     async with engine.begin() as connection:
         await connection.execute(text("SELECT 1"))
+        await connection.run_sync(Base.metadata.create_all)
