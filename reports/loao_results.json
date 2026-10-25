@@ -1,0 +1,1839 @@
+{
+  "dataset_name": "fixture (synthetic, one capture)",
+  "split_definition": {
+    "normal_training_fraction": 0.7,
+    "normal_test_fraction": 0.3,
+    "held_out_attack_frames": "all frames from the held-out attack type"
+  },
+  "configurations": {
+    "smote_off": {
+      "smote_used": false,
+      "seeds": [
+        42,
+        7,
+        123
+      ],
+      "threshold_status": "invalid_method",
+      "threshold_note": "Threshold selected on validation data containing only training attack types, so it does not measure unseen-attack detection. Do not use.",
+      "model_configuration": {
+        "estimator": "RandomForestClassifier",
+        "n_estimators": 100,
+        "class_weight": "balanced",
+        "random_state": "per-seed",
+        "n_jobs": 1,
+        "decision_threshold": 0.5
+      },
+      "results_by_seed": {
+        "42": {
+          "dos": {
+            "seed": 42,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "fuzzy": 250,
+              "gear_spoof": 250,
+              "normal": 2800,
+              "rpm_spoof": 250
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 3550,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "test_attack_type_counts": {
+              "dos": 250,
+              "normal": 1200
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 250,
+              "false_negatives": 0,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 1.0,
+              "false_alarm_rate": 0.0
+            }
+          },
+          "fuzzy": {
+            "seed": 42,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "dos": 250,
+              "gear_spoof": 250,
+              "normal": 2800,
+              "rpm_spoof": 250
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 3550,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "test_attack_type_counts": {
+              "fuzzy": 250,
+              "normal": 1200
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 59,
+              "false_negatives": 191,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 0.236,
+              "false_alarm_rate": 0.0
+            },
+            "held_out_fuzzy_probability_summary": {
+              "sample_count": 250,
+              "quantiles": {
+                "min": 0.02,
+                "p10": 0.1,
+                "p25": 0.11,
+                "p50": 0.26,
+                "p75": 0.5,
+                "p90": 0.74,
+                "max": 0.8
+              },
+              "fraction_within_0_1_of_0_5": 0.192
+            },
+            "validation_threshold_analysis": {
+              "threshold": 0.8899999999999999,
+              "selection_rule": "maximize validation recall subject to validation FPR <= validation FPR at threshold 0.5",
+              "validation_at_default_threshold": {
+                "sample_count": 710,
+                "class_counts": {
+                  "0": 560,
+                  "1": 150
+                },
+                "attack_frames": 150,
+                "normal_frames": 560,
+                "true_positives": 150,
+                "false_negatives": 0,
+                "false_positives": 0,
+                "true_negatives": 560,
+                "detected_rate": 1.0,
+                "false_alarm_rate": 0.0
+              },
+              "validation_at_selected_threshold": {
+                "sample_count": 710,
+                "class_counts": {
+                  "0": 560,
+                  "1": 150
+                },
+                "attack_frames": 150,
+                "normal_frames": 560,
+                "true_positives": 150,
+                "false_negatives": 0,
+                "false_positives": 0,
+                "true_negatives": 560,
+                "detected_rate": 1.0,
+                "false_alarm_rate": 0.0
+              },
+              "validation_threshold_selection": {
+                "validation_sample_count": 710,
+                "validation_class_counts": {
+                  "0": 560,
+                  "1": 150
+                },
+                "default_threshold": 0.5,
+                "selected_recall": 1.0,
+                "selected_false_alarm_rate": 0.0
+              },
+              "fit_split_rows_before_smote": 2840,
+              "fit_attack_type_counts": {
+                "dos": 200,
+                "gear_spoof": 200,
+                "normal": 2240,
+                "rpm_spoof": 200
+              },
+              "validation_attack_type_counts": {
+                "dos": 50,
+                "gear_spoof": 50,
+                "normal": 560,
+                "rpm_spoof": 50
+              },
+              "fit_class_counts_before_smote": {
+                "0": 2240,
+                "1": 600
+              },
+              "fit_class_counts_after_smote": {
+                "0": 2240,
+                "1": 600
+              },
+              "test_at_default_threshold": {
+                "sample_count": 1450,
+                "class_counts": {
+                  "0": 1200,
+                  "1": 250
+                },
+                "attack_frames": 250,
+                "normal_frames": 1200,
+                "true_positives": 68,
+                "false_negatives": 182,
+                "false_positives": 0,
+                "true_negatives": 1200,
+                "detected_rate": 0.272,
+                "false_alarm_rate": 0.0
+              },
+              "test_at_selected_threshold": {
+                "sample_count": 1450,
+                "class_counts": {
+                  "0": 1200,
+                  "1": 250
+                },
+                "attack_frames": 250,
+                "normal_frames": 1200,
+                "true_positives": 0,
+                "false_negatives": 250,
+                "false_positives": 0,
+                "true_negatives": 1200,
+                "detected_rate": 0.0,
+                "false_alarm_rate": 0.0
+              },
+              "held_out_fuzzy_probability_summary": {
+                "sample_count": 250,
+                "quantiles": {
+                  "min": 0.04,
+                  "p10": 0.11,
+                  "p25": 0.12,
+                  "p50": 0.25,
+                  "p75": 0.52,
+                  "p90": 0.72,
+                  "max": 0.79
+                },
+                "fraction_within_0_1_of_0_5": 0.204
+              }
+            }
+          },
+          "gear_spoof": {
+            "seed": 42,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "dos": 250,
+              "fuzzy": 250,
+              "normal": 2800,
+              "rpm_spoof": 250
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 3550,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "test_attack_type_counts": {
+              "gear_spoof": 250,
+              "normal": 1200
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 226,
+              "false_negatives": 24,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 0.904,
+              "false_alarm_rate": 0.0
+            }
+          },
+          "rpm_spoof": {
+            "seed": 42,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "dos": 250,
+              "fuzzy": 250,
+              "gear_spoof": 250,
+              "normal": 2800
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 3550,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "test_attack_type_counts": {
+              "normal": 1200,
+              "rpm_spoof": 250
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 216,
+              "false_negatives": 34,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 0.864,
+              "false_alarm_rate": 0.0
+            }
+          }
+        },
+        "7": {
+          "dos": {
+            "seed": 7,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "fuzzy": 250,
+              "gear_spoof": 250,
+              "normal": 2800,
+              "rpm_spoof": 250
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 3550,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "test_attack_type_counts": {
+              "dos": 250,
+              "normal": 1200
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 250,
+              "false_negatives": 0,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 1.0,
+              "false_alarm_rate": 0.0
+            }
+          },
+          "fuzzy": {
+            "seed": 7,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "dos": 250,
+              "gear_spoof": 250,
+              "normal": 2800,
+              "rpm_spoof": 250
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 3550,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "test_attack_type_counts": {
+              "fuzzy": 250,
+              "normal": 1200
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 77,
+              "false_negatives": 173,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 0.308,
+              "false_alarm_rate": 0.0
+            },
+            "held_out_fuzzy_probability_summary": {
+              "sample_count": 250,
+              "quantiles": {
+                "min": 0.04,
+                "p10": 0.1,
+                "p25": 0.11,
+                "p50": 0.275,
+                "p75": 0.56,
+                "p90": 0.76,
+                "max": 0.8
+              },
+              "fraction_within_0_1_of_0_5": 0.196
+            },
+            "validation_threshold_analysis": {
+              "threshold": 0.8999999999999999,
+              "selection_rule": "maximize validation recall subject to validation FPR <= validation FPR at threshold 0.5",
+              "validation_at_default_threshold": {
+                "sample_count": 710,
+                "class_counts": {
+                  "0": 560,
+                  "1": 150
+                },
+                "attack_frames": 150,
+                "normal_frames": 560,
+                "true_positives": 150,
+                "false_negatives": 0,
+                "false_positives": 0,
+                "true_negatives": 560,
+                "detected_rate": 1.0,
+                "false_alarm_rate": 0.0
+              },
+              "validation_at_selected_threshold": {
+                "sample_count": 710,
+                "class_counts": {
+                  "0": 560,
+                  "1": 150
+                },
+                "attack_frames": 150,
+                "normal_frames": 560,
+                "true_positives": 150,
+                "false_negatives": 0,
+                "false_positives": 0,
+                "true_negatives": 560,
+                "detected_rate": 1.0,
+                "false_alarm_rate": 0.0
+              },
+              "validation_threshold_selection": {
+                "validation_sample_count": 710,
+                "validation_class_counts": {
+                  "0": 560,
+                  "1": 150
+                },
+                "default_threshold": 0.5,
+                "selected_recall": 1.0,
+                "selected_false_alarm_rate": 0.0
+              },
+              "fit_split_rows_before_smote": 2840,
+              "fit_attack_type_counts": {
+                "dos": 200,
+                "gear_spoof": 200,
+                "normal": 2240,
+                "rpm_spoof": 200
+              },
+              "validation_attack_type_counts": {
+                "dos": 50,
+                "gear_spoof": 50,
+                "normal": 560,
+                "rpm_spoof": 50
+              },
+              "fit_class_counts_before_smote": {
+                "0": 2240,
+                "1": 600
+              },
+              "fit_class_counts_after_smote": {
+                "0": 2240,
+                "1": 600
+              },
+              "test_at_default_threshold": {
+                "sample_count": 1450,
+                "class_counts": {
+                  "0": 1200,
+                  "1": 250
+                },
+                "attack_frames": 250,
+                "normal_frames": 1200,
+                "true_positives": 77,
+                "false_negatives": 173,
+                "false_positives": 0,
+                "true_negatives": 1200,
+                "detected_rate": 0.308,
+                "false_alarm_rate": 0.0
+              },
+              "test_at_selected_threshold": {
+                "sample_count": 1450,
+                "class_counts": {
+                  "0": 1200,
+                  "1": 250
+                },
+                "attack_frames": 250,
+                "normal_frames": 1200,
+                "true_positives": 0,
+                "false_negatives": 250,
+                "false_positives": 0,
+                "true_negatives": 1200,
+                "detected_rate": 0.0,
+                "false_alarm_rate": 0.0
+              },
+              "held_out_fuzzy_probability_summary": {
+                "sample_count": 250,
+                "quantiles": {
+                  "min": 0.02,
+                  "p10": 0.1,
+                  "p25": 0.11,
+                  "p50": 0.265,
+                  "p75": 0.5475,
+                  "p90": 0.71,
+                  "max": 0.77
+                },
+                "fraction_within_0_1_of_0_5": 0.196
+              }
+            }
+          },
+          "gear_spoof": {
+            "seed": 7,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "dos": 250,
+              "fuzzy": 250,
+              "normal": 2800,
+              "rpm_spoof": 250
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 3550,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "test_attack_type_counts": {
+              "gear_spoof": 250,
+              "normal": 1200
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 248,
+              "false_negatives": 2,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 0.992,
+              "false_alarm_rate": 0.0
+            }
+          },
+          "rpm_spoof": {
+            "seed": 7,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "dos": 250,
+              "fuzzy": 250,
+              "gear_spoof": 250,
+              "normal": 2800
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 3550,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "test_attack_type_counts": {
+              "normal": 1200,
+              "rpm_spoof": 250
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 216,
+              "false_negatives": 34,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 0.864,
+              "false_alarm_rate": 0.0
+            }
+          }
+        },
+        "123": {
+          "dos": {
+            "seed": 123,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "fuzzy": 250,
+              "gear_spoof": 250,
+              "normal": 2800,
+              "rpm_spoof": 250
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 3550,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "test_attack_type_counts": {
+              "dos": 250,
+              "normal": 1200
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 250,
+              "false_negatives": 0,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 1.0,
+              "false_alarm_rate": 0.0
+            }
+          },
+          "fuzzy": {
+            "seed": 123,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "dos": 250,
+              "gear_spoof": 250,
+              "normal": 2800,
+              "rpm_spoof": 250
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 3550,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "test_attack_type_counts": {
+              "fuzzy": 250,
+              "normal": 1200
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 71,
+              "false_negatives": 179,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 0.284,
+              "false_alarm_rate": 0.0
+            },
+            "held_out_fuzzy_probability_summary": {
+              "sample_count": 250,
+              "quantiles": {
+                "min": 0.04,
+                "p10": 0.14,
+                "p25": 0.15,
+                "p50": 0.32,
+                "p75": 0.52,
+                "p90": 0.71,
+                "max": 0.76
+              },
+              "fraction_within_0_1_of_0_5": 0.22
+            },
+            "validation_threshold_analysis": {
+              "threshold": 0.8999999999999999,
+              "selection_rule": "maximize validation recall subject to validation FPR <= validation FPR at threshold 0.5",
+              "validation_at_default_threshold": {
+                "sample_count": 710,
+                "class_counts": {
+                  "0": 560,
+                  "1": 150
+                },
+                "attack_frames": 150,
+                "normal_frames": 560,
+                "true_positives": 150,
+                "false_negatives": 0,
+                "false_positives": 0,
+                "true_negatives": 560,
+                "detected_rate": 1.0,
+                "false_alarm_rate": 0.0
+              },
+              "validation_at_selected_threshold": {
+                "sample_count": 710,
+                "class_counts": {
+                  "0": 560,
+                  "1": 150
+                },
+                "attack_frames": 150,
+                "normal_frames": 560,
+                "true_positives": 150,
+                "false_negatives": 0,
+                "false_positives": 0,
+                "true_negatives": 560,
+                "detected_rate": 1.0,
+                "false_alarm_rate": 0.0
+              },
+              "validation_threshold_selection": {
+                "validation_sample_count": 710,
+                "validation_class_counts": {
+                  "0": 560,
+                  "1": 150
+                },
+                "default_threshold": 0.5,
+                "selected_recall": 1.0,
+                "selected_false_alarm_rate": 0.0
+              },
+              "fit_split_rows_before_smote": 2840,
+              "fit_attack_type_counts": {
+                "dos": 200,
+                "gear_spoof": 200,
+                "normal": 2240,
+                "rpm_spoof": 200
+              },
+              "validation_attack_type_counts": {
+                "dos": 50,
+                "gear_spoof": 50,
+                "normal": 560,
+                "rpm_spoof": 50
+              },
+              "fit_class_counts_before_smote": {
+                "0": 2240,
+                "1": 600
+              },
+              "fit_class_counts_after_smote": {
+                "0": 2240,
+                "1": 600
+              },
+              "test_at_default_threshold": {
+                "sample_count": 1450,
+                "class_counts": {
+                  "0": 1200,
+                  "1": 250
+                },
+                "attack_frames": 250,
+                "normal_frames": 1200,
+                "true_positives": 49,
+                "false_negatives": 201,
+                "false_positives": 0,
+                "true_negatives": 1200,
+                "detected_rate": 0.196,
+                "false_alarm_rate": 0.0
+              },
+              "test_at_selected_threshold": {
+                "sample_count": 1450,
+                "class_counts": {
+                  "0": 1200,
+                  "1": 250
+                },
+                "attack_frames": 250,
+                "normal_frames": 1200,
+                "true_positives": 0,
+                "false_negatives": 250,
+                "false_positives": 0,
+                "true_negatives": 1200,
+                "detected_rate": 0.0,
+                "false_alarm_rate": 0.0
+              },
+              "held_out_fuzzy_probability_summary": {
+                "sample_count": 250,
+                "quantiles": {
+                  "min": 0.05,
+                  "p10": 0.12,
+                  "p25": 0.13,
+                  "p50": 0.22,
+                  "p75": 0.48,
+                  "p90": 0.65,
+                  "max": 0.72
+                },
+                "fraction_within_0_1_of_0_5": 0.192
+              }
+            }
+          },
+          "gear_spoof": {
+            "seed": 123,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "dos": 250,
+              "fuzzy": 250,
+              "normal": 2800,
+              "rpm_spoof": 250
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 3550,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "test_attack_type_counts": {
+              "gear_spoof": 250,
+              "normal": 1200
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 223,
+              "false_negatives": 27,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 0.892,
+              "false_alarm_rate": 0.0
+            }
+          },
+          "rpm_spoof": {
+            "seed": 123,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "dos": 250,
+              "fuzzy": 250,
+              "gear_spoof": 250,
+              "normal": 2800
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 3550,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "test_attack_type_counts": {
+              "normal": 1200,
+              "rpm_spoof": 250
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 201,
+              "false_negatives": 49,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 0.804,
+              "false_alarm_rate": 0.0
+            }
+          }
+        }
+      },
+      "aggregates_by_attack": {
+        "dos": {
+          "seed_count": 3,
+          "seeds": [
+            42,
+            7,
+            123
+          ],
+          "held_out_attack_frames_per_seed": 250,
+          "normal_test_frames_per_seed": 1200,
+          "detected_rate_mean": 1.0,
+          "detected_rate_min": 1.0,
+          "detected_rate_max": 1.0,
+          "detected_rate_range": 0.0,
+          "false_alarm_rate_mean": 0.0,
+          "false_alarm_rate_min": 0.0,
+          "false_alarm_rate_max": 0.0
+        },
+        "fuzzy": {
+          "seed_count": 3,
+          "seeds": [
+            42,
+            7,
+            123
+          ],
+          "held_out_attack_frames_per_seed": 250,
+          "normal_test_frames_per_seed": 1200,
+          "detected_rate_mean": 0.276,
+          "detected_rate_min": 0.236,
+          "detected_rate_max": 0.308,
+          "detected_rate_range": 0.072,
+          "false_alarm_rate_mean": 0.0,
+          "false_alarm_rate_min": 0.0,
+          "false_alarm_rate_max": 0.0
+        },
+        "gear_spoof": {
+          "seed_count": 3,
+          "seeds": [
+            42,
+            7,
+            123
+          ],
+          "held_out_attack_frames_per_seed": 250,
+          "normal_test_frames_per_seed": 1200,
+          "detected_rate_mean": 0.929333,
+          "detected_rate_min": 0.892,
+          "detected_rate_max": 0.992,
+          "detected_rate_range": 0.1,
+          "false_alarm_rate_mean": 0.0,
+          "false_alarm_rate_min": 0.0,
+          "false_alarm_rate_max": 0.0
+        },
+        "rpm_spoof": {
+          "seed_count": 3,
+          "seeds": [
+            42,
+            7,
+            123
+          ],
+          "held_out_attack_frames_per_seed": 250,
+          "normal_test_frames_per_seed": 1200,
+          "detected_rate_mean": 0.844,
+          "detected_rate_min": 0.804,
+          "detected_rate_max": 0.864,
+          "detected_rate_range": 0.06,
+          "false_alarm_rate_mean": 0.0,
+          "false_alarm_rate_min": 0.0,
+          "false_alarm_rate_max": 0.0
+        }
+      }
+    },
+    "smote_on": {
+      "smote_used": true,
+      "seeds": [
+        42,
+        7,
+        123
+      ],
+      "model_configuration": {
+        "estimator": "RandomForestClassifier",
+        "n_estimators": 100,
+        "class_weight": "balanced",
+        "random_state": "per-seed",
+        "n_jobs": -1,
+        "decision_threshold": 0.5
+      },
+      "results_by_seed": {
+        "42": {
+          "dos": {
+            "seed": 42,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "fuzzy": 250,
+              "gear_spoof": 250,
+              "normal": 2800,
+              "rpm_spoof": 250
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 5600,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 2800
+            },
+            "test_attack_type_counts": {
+              "dos": 250,
+              "normal": 1200
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 250,
+              "false_negatives": 0,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 1.0,
+              "false_alarm_rate": 0.0
+            }
+          },
+          "fuzzy": {
+            "seed": 42,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "dos": 250,
+              "gear_spoof": 250,
+              "normal": 2800,
+              "rpm_spoof": 250
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 5600,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 2800
+            },
+            "test_attack_type_counts": {
+              "fuzzy": 250,
+              "normal": 1200
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 50,
+              "false_negatives": 200,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 0.2,
+              "false_alarm_rate": 0.0
+            },
+            "held_out_fuzzy_probability_summary": {
+              "sample_count": 250,
+              "quantiles": {
+                "min": 0.03,
+                "p10": 0.1,
+                "p25": 0.11,
+                "p50": 0.23,
+                "p75": 0.4675,
+                "p90": 0.7,
+                "max": 0.76
+              },
+              "fraction_within_0_1_of_0_5": 0.172
+            },
+            "validation_threshold_analysis": {
+              "threshold": 0.8399999999999999,
+              "selection_rule": "maximize validation recall subject to validation FPR <= validation FPR at threshold 0.5",
+              "validation_at_default_threshold": {
+                "sample_count": 710,
+                "class_counts": {
+                  "0": 560,
+                  "1": 150
+                },
+                "attack_frames": 150,
+                "normal_frames": 560,
+                "true_positives": 150,
+                "false_negatives": 0,
+                "false_positives": 0,
+                "true_negatives": 560,
+                "detected_rate": 1.0,
+                "false_alarm_rate": 0.0
+              },
+              "validation_at_selected_threshold": {
+                "sample_count": 710,
+                "class_counts": {
+                  "0": 560,
+                  "1": 150
+                },
+                "attack_frames": 150,
+                "normal_frames": 560,
+                "true_positives": 150,
+                "false_negatives": 0,
+                "false_positives": 0,
+                "true_negatives": 560,
+                "detected_rate": 1.0,
+                "false_alarm_rate": 0.0
+              },
+              "validation_threshold_selection": {
+                "validation_sample_count": 710,
+                "validation_class_counts": {
+                  "0": 560,
+                  "1": 150
+                },
+                "default_threshold": 0.5,
+                "selected_recall": 1.0,
+                "selected_false_alarm_rate": 0.0
+              },
+              "fit_split_rows_before_smote": 2840,
+              "fit_attack_type_counts": {
+                "dos": 200,
+                "gear_spoof": 200,
+                "normal": 2240,
+                "rpm_spoof": 200
+              },
+              "validation_attack_type_counts": {
+                "dos": 50,
+                "gear_spoof": 50,
+                "normal": 560,
+                "rpm_spoof": 50
+              },
+              "fit_class_counts_before_smote": {
+                "0": 2240,
+                "1": 600
+              },
+              "fit_class_counts_after_smote": {
+                "0": 2240,
+                "1": 2240
+              },
+              "test_at_default_threshold": {
+                "sample_count": 1450,
+                "class_counts": {
+                  "0": 1200,
+                  "1": 250
+                },
+                "attack_frames": 250,
+                "normal_frames": 1200,
+                "true_positives": 49,
+                "false_negatives": 201,
+                "false_positives": 0,
+                "true_negatives": 1200,
+                "detected_rate": 0.196,
+                "false_alarm_rate": 0.0
+              },
+              "test_at_selected_threshold": {
+                "sample_count": 1450,
+                "class_counts": {
+                  "0": 1200,
+                  "1": 250
+                },
+                "attack_frames": 250,
+                "normal_frames": 1200,
+                "true_positives": 0,
+                "false_negatives": 250,
+                "false_positives": 0,
+                "true_negatives": 1200,
+                "detected_rate": 0.0,
+                "false_alarm_rate": 0.0
+              },
+              "held_out_fuzzy_probability_summary": {
+                "sample_count": 250,
+                "quantiles": {
+                  "min": 0.03,
+                  "p10": 0.09,
+                  "p25": 0.1,
+                  "p50": 0.2,
+                  "p75": 0.4775,
+                  "p90": 0.66,
+                  "max": 0.72
+                },
+                "fraction_within_0_1_of_0_5": 0.188
+              }
+            }
+          },
+          "gear_spoof": {
+            "seed": 42,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "dos": 250,
+              "fuzzy": 250,
+              "normal": 2800,
+              "rpm_spoof": 250
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 5600,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 2800
+            },
+            "test_attack_type_counts": {
+              "gear_spoof": 250,
+              "normal": 1200
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 226,
+              "false_negatives": 24,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 0.904,
+              "false_alarm_rate": 0.0
+            }
+          },
+          "rpm_spoof": {
+            "seed": 42,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "dos": 250,
+              "fuzzy": 250,
+              "gear_spoof": 250,
+              "normal": 2800
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 5600,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 2800
+            },
+            "test_attack_type_counts": {
+              "normal": 1200,
+              "rpm_spoof": 250
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 217,
+              "false_negatives": 33,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 0.868,
+              "false_alarm_rate": 0.0
+            }
+          }
+        },
+        "7": {
+          "dos": {
+            "seed": 7,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "fuzzy": 250,
+              "gear_spoof": 250,
+              "normal": 2800,
+              "rpm_spoof": 250
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 5600,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 2800
+            },
+            "test_attack_type_counts": {
+              "dos": 250,
+              "normal": 1200
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 250,
+              "false_negatives": 0,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 1.0,
+              "false_alarm_rate": 0.0
+            }
+          },
+          "fuzzy": {
+            "seed": 7,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "dos": 250,
+              "gear_spoof": 250,
+              "normal": 2800,
+              "rpm_spoof": 250
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 5600,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 2800
+            },
+            "test_attack_type_counts": {
+              "fuzzy": 250,
+              "normal": 1200
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 66,
+              "false_negatives": 184,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 0.264,
+              "false_alarm_rate": 0.0
+            },
+            "held_out_fuzzy_probability_summary": {
+              "sample_count": 250,
+              "quantiles": {
+                "min": 0.04,
+                "p10": 0.08,
+                "p25": 0.09,
+                "p50": 0.22,
+                "p75": 0.51,
+                "p90": 0.66,
+                "max": 0.73
+              },
+              "fraction_within_0_1_of_0_5": 0.152
+            },
+            "validation_threshold_analysis": {
+              "threshold": 0.8699999999999999,
+              "selection_rule": "maximize validation recall subject to validation FPR <= validation FPR at threshold 0.5",
+              "validation_at_default_threshold": {
+                "sample_count": 710,
+                "class_counts": {
+                  "0": 560,
+                  "1": 150
+                },
+                "attack_frames": 150,
+                "normal_frames": 560,
+                "true_positives": 150,
+                "false_negatives": 0,
+                "false_positives": 0,
+                "true_negatives": 560,
+                "detected_rate": 1.0,
+                "false_alarm_rate": 0.0
+              },
+              "validation_at_selected_threshold": {
+                "sample_count": 710,
+                "class_counts": {
+                  "0": 560,
+                  "1": 150
+                },
+                "attack_frames": 150,
+                "normal_frames": 560,
+                "true_positives": 150,
+                "false_negatives": 0,
+                "false_positives": 0,
+                "true_negatives": 560,
+                "detected_rate": 1.0,
+                "false_alarm_rate": 0.0
+              },
+              "validation_threshold_selection": {
+                "validation_sample_count": 710,
+                "validation_class_counts": {
+                  "0": 560,
+                  "1": 150
+                },
+                "default_threshold": 0.5,
+                "selected_recall": 1.0,
+                "selected_false_alarm_rate": 0.0
+              },
+              "fit_split_rows_before_smote": 2840,
+              "fit_attack_type_counts": {
+                "dos": 200,
+                "gear_spoof": 200,
+                "normal": 2240,
+                "rpm_spoof": 200
+              },
+              "validation_attack_type_counts": {
+                "dos": 50,
+                "gear_spoof": 50,
+                "normal": 560,
+                "rpm_spoof": 50
+              },
+              "fit_class_counts_before_smote": {
+                "0": 2240,
+                "1": 600
+              },
+              "fit_class_counts_after_smote": {
+                "0": 2240,
+                "1": 2240
+              },
+              "test_at_default_threshold": {
+                "sample_count": 1450,
+                "class_counts": {
+                  "0": 1200,
+                  "1": 250
+                },
+                "attack_frames": 250,
+                "normal_frames": 1200,
+                "true_positives": 60,
+                "false_negatives": 190,
+                "false_positives": 0,
+                "true_negatives": 1200,
+                "detected_rate": 0.24,
+                "false_alarm_rate": 0.0
+              },
+              "test_at_selected_threshold": {
+                "sample_count": 1450,
+                "class_counts": {
+                  "0": 1200,
+                  "1": 250
+                },
+                "attack_frames": 250,
+                "normal_frames": 1200,
+                "true_positives": 0,
+                "false_negatives": 250,
+                "false_positives": 0,
+                "true_negatives": 1200,
+                "detected_rate": 0.0,
+                "false_alarm_rate": 0.0
+              },
+              "held_out_fuzzy_probability_summary": {
+                "sample_count": 250,
+                "quantiles": {
+                  "min": 0.03,
+                  "p10": 0.08,
+                  "p25": 0.09,
+                  "p50": 0.22,
+                  "p75": 0.5,
+                  "p90": 0.72,
+                  "max": 0.77
+                },
+                "fraction_within_0_1_of_0_5": 0.188
+              }
+            }
+          },
+          "gear_spoof": {
+            "seed": 7,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "dos": 250,
+              "fuzzy": 250,
+              "normal": 2800,
+              "rpm_spoof": 250
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 5600,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 2800
+            },
+            "test_attack_type_counts": {
+              "gear_spoof": 250,
+              "normal": 1200
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 226,
+              "false_negatives": 24,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 0.904,
+              "false_alarm_rate": 0.0
+            }
+          },
+          "rpm_spoof": {
+            "seed": 7,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "dos": 250,
+              "fuzzy": 250,
+              "gear_spoof": 250,
+              "normal": 2800
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 5600,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 2800
+            },
+            "test_attack_type_counts": {
+              "normal": 1200,
+              "rpm_spoof": 250
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 214,
+              "false_negatives": 36,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 0.856,
+              "false_alarm_rate": 0.0
+            }
+          }
+        },
+        "123": {
+          "dos": {
+            "seed": 123,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "fuzzy": 250,
+              "gear_spoof": 250,
+              "normal": 2800,
+              "rpm_spoof": 250
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 5600,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 2800
+            },
+            "test_attack_type_counts": {
+              "dos": 250,
+              "normal": 1200
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 250,
+              "false_negatives": 0,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 1.0,
+              "false_alarm_rate": 0.0
+            }
+          },
+          "fuzzy": {
+            "seed": 123,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "dos": 250,
+              "gear_spoof": 250,
+              "normal": 2800,
+              "rpm_spoof": 250
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 5600,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 2800
+            },
+            "test_attack_type_counts": {
+              "fuzzy": 250,
+              "normal": 1200
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 45,
+              "false_negatives": 205,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 0.18,
+              "false_alarm_rate": 0.0
+            },
+            "held_out_fuzzy_probability_summary": {
+              "sample_count": 250,
+              "quantiles": {
+                "min": 0.03,
+                "p10": 0.12,
+                "p25": 0.12,
+                "p50": 0.21,
+                "p75": 0.42,
+                "p90": 0.61,
+                "max": 0.65
+              },
+              "fraction_within_0_1_of_0_5": 0.204
+            },
+            "validation_threshold_analysis": {
+              "threshold": 0.8899999999999999,
+              "selection_rule": "maximize validation recall subject to validation FPR <= validation FPR at threshold 0.5",
+              "validation_at_default_threshold": {
+                "sample_count": 710,
+                "class_counts": {
+                  "0": 560,
+                  "1": 150
+                },
+                "attack_frames": 150,
+                "normal_frames": 560,
+                "true_positives": 150,
+                "false_negatives": 0,
+                "false_positives": 0,
+                "true_negatives": 560,
+                "detected_rate": 1.0,
+                "false_alarm_rate": 0.0
+              },
+              "validation_at_selected_threshold": {
+                "sample_count": 710,
+                "class_counts": {
+                  "0": 560,
+                  "1": 150
+                },
+                "attack_frames": 150,
+                "normal_frames": 560,
+                "true_positives": 150,
+                "false_negatives": 0,
+                "false_positives": 0,
+                "true_negatives": 560,
+                "detected_rate": 1.0,
+                "false_alarm_rate": 0.0
+              },
+              "validation_threshold_selection": {
+                "validation_sample_count": 710,
+                "validation_class_counts": {
+                  "0": 560,
+                  "1": 150
+                },
+                "default_threshold": 0.5,
+                "selected_recall": 1.0,
+                "selected_false_alarm_rate": 0.0
+              },
+              "fit_split_rows_before_smote": 2840,
+              "fit_attack_type_counts": {
+                "dos": 200,
+                "gear_spoof": 200,
+                "normal": 2240,
+                "rpm_spoof": 200
+              },
+              "validation_attack_type_counts": {
+                "dos": 50,
+                "gear_spoof": 50,
+                "normal": 560,
+                "rpm_spoof": 50
+              },
+              "fit_class_counts_before_smote": {
+                "0": 2240,
+                "1": 600
+              },
+              "fit_class_counts_after_smote": {
+                "0": 2240,
+                "1": 2240
+              },
+              "test_at_default_threshold": {
+                "sample_count": 1450,
+                "class_counts": {
+                  "0": 1200,
+                  "1": 250
+                },
+                "attack_frames": 250,
+                "normal_frames": 1200,
+                "true_positives": 46,
+                "false_negatives": 204,
+                "false_positives": 0,
+                "true_negatives": 1200,
+                "detected_rate": 0.184,
+                "false_alarm_rate": 0.0
+              },
+              "test_at_selected_threshold": {
+                "sample_count": 1450,
+                "class_counts": {
+                  "0": 1200,
+                  "1": 250
+                },
+                "attack_frames": 250,
+                "normal_frames": 1200,
+                "true_positives": 0,
+                "false_negatives": 250,
+                "false_positives": 0,
+                "true_negatives": 1200,
+                "detected_rate": 0.0,
+                "false_alarm_rate": 0.0
+              },
+              "held_out_fuzzy_probability_summary": {
+                "sample_count": 250,
+                "quantiles": {
+                  "min": 0.06,
+                  "p10": 0.12,
+                  "p25": 0.13,
+                  "p50": 0.22,
+                  "p75": 0.45,
+                  "p90": 0.61,
+                  "max": 0.69
+                },
+                "fraction_within_0_1_of_0_5": 0.244
+              }
+            }
+          },
+          "gear_spoof": {
+            "seed": 123,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "dos": 250,
+              "fuzzy": 250,
+              "normal": 2800,
+              "rpm_spoof": 250
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 5600,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 2800
+            },
+            "test_attack_type_counts": {
+              "gear_spoof": 250,
+              "normal": 1200
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 223,
+              "false_negatives": 27,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 0.892,
+              "false_alarm_rate": 0.0
+            }
+          },
+          "rpm_spoof": {
+            "seed": 123,
+            "training_rows": 3550,
+            "training_attack_type_counts": {
+              "dos": 250,
+              "fuzzy": 250,
+              "gear_spoof": 250,
+              "normal": 2800
+            },
+            "training_class_counts_before_smote": {
+              "0": 2800,
+              "1": 750
+            },
+            "training_rows_after_smote": 5600,
+            "training_class_counts_after_smote": {
+              "0": 2800,
+              "1": 2800
+            },
+            "test_attack_type_counts": {
+              "normal": 1200,
+              "rpm_spoof": 250
+            },
+            "test_metrics_at_threshold_0_5": {
+              "sample_count": 1450,
+              "class_counts": {
+                "0": 1200,
+                "1": 250
+              },
+              "attack_frames": 250,
+              "normal_frames": 1200,
+              "true_positives": 204,
+              "false_negatives": 46,
+              "false_positives": 0,
+              "true_negatives": 1200,
+              "detected_rate": 0.816,
+              "false_alarm_rate": 0.0
+            }
+          }
+        }
+      },
+      "aggregates_by_attack": {
+        "dos": {
+          "seed_count": 3,
+          "seeds": [
+            42,
+            7,
+            123
+          ],
+          "held_out_attack_frames_per_seed": 250,
+          "normal_test_frames_per_seed": 1200,
+          "detected_rate_mean": 1.0,
+          "detected_rate_min": 1.0,
+          "detected_rate_max": 1.0,
+          "detected_rate_range": 0.0,
+          "false_alarm_rate_mean": 0.0,
+          "false_alarm_rate_min": 0.0,
+          "false_alarm_rate_max": 0.0
+        },
+        "fuzzy": {
+          "seed_count": 3,
+          "seeds": [
+            42,
+            7,
+            123
+          ],
+          "held_out_attack_frames_per_seed": 250,
+          "normal_test_frames_per_seed": 1200,
+          "detected_rate_mean": 0.214667,
+          "detected_rate_min": 0.18,
+          "detected_rate_max": 0.264,
+          "detected_rate_range": 0.084,
+          "false_alarm_rate_mean": 0.0,
+          "false_alarm_rate_min": 0.0,
+          "false_alarm_rate_max": 0.0
+        },
+        "gear_spoof": {
+          "seed_count": 3,
+          "seeds": [
+            42,
+            7,
+            123
+          ],
+          "held_out_attack_frames_per_seed": 250,
+          "normal_test_frames_per_seed": 1200,
+          "detected_rate_mean": 0.9,
+          "detected_rate_min": 0.892,
+          "detected_rate_max": 0.904,
+          "detected_rate_range": 0.012,
+          "false_alarm_rate_mean": 0.0,
+          "false_alarm_rate_min": 0.0,
+          "false_alarm_rate_max": 0.0
+        },
+        "rpm_spoof": {
+          "seed_count": 3,
+          "seeds": [
+            42,
+            7,
+            123
+          ],
+          "held_out_attack_frames_per_seed": 250,
+          "normal_test_frames_per_seed": 1200,
+          "detected_rate_mean": 0.846667,
+          "detected_rate_min": 0.816,
+          "detected_rate_max": 0.868,
+          "detected_rate_range": 0.052,
+          "false_alarm_rate_mean": 0.0,
+          "false_alarm_rate_min": 0.0,
+          "false_alarm_rate_max": 0.0
+        }
+      }
+    }
+  },
+  "generated_at": "2026-10-25T07:44:18.552889+00:00"
+}

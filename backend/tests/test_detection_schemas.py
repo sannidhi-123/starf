@@ -1,6 +1,4 @@
 import pytest
-from pydantic import ValidationError
-
 from app.modules.detection.schemas import (
     CANFrameInput,
     DetectionResponse,
@@ -14,6 +12,7 @@ from app.modules.detection.schemas import (
     RuleViolationType,
     ViolationSeverity,
 )
+from pydantic import ValidationError
 
 
 def test_can_frame_valid_inputs():

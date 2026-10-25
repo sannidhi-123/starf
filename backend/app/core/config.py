@@ -14,7 +14,9 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     cors_origins: list[str] = ["http://localhost:5173"]
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore", case_sensitive=False)
+    model_config = SettingsConfigDict(
+        env_file=".env", extra="ignore", case_sensitive=False
+    )
 
     @field_validator("integration_mode")
     @classmethod

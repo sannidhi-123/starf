@@ -1,0 +1,139 @@
+{
+  "method": "IsolationForest trained on normal frames only",
+  "calibration": "threshold = 0.99 quantile of normal calibration scores",
+  "seeds": [
+    42,
+    7,
+    123
+  ],
+  "by_attack": {
+    "dos": {
+      "runs": [
+        {
+          "seed": 42,
+          "threshold": 0.685777,
+          "attack_frames": 250,
+          "normal_frames": 1200,
+          "detected_rate": 1.0,
+          "false_alarm_rate": 0.0125
+        },
+        {
+          "seed": 7,
+          "threshold": 0.678836,
+          "attack_frames": 250,
+          "normal_frames": 1200,
+          "detected_rate": 1.0,
+          "false_alarm_rate": 0.011667
+        },
+        {
+          "seed": 123,
+          "threshold": 0.679175,
+          "attack_frames": 250,
+          "normal_frames": 1200,
+          "detected_rate": 1.0,
+          "false_alarm_rate": 0.008333
+        }
+      ],
+      "detected_rate_mean": 1.0,
+      "detected_rate_min": 1.0,
+      "detected_rate_max": 1.0,
+      "false_alarm_rate_mean": 0.010833
+    },
+    "fuzzy": {
+      "runs": [
+        {
+          "seed": 42,
+          "threshold": 0.685777,
+          "attack_frames": 250,
+          "normal_frames": 1200,
+          "detected_rate": 0.608,
+          "false_alarm_rate": 0.0125
+        },
+        {
+          "seed": 7,
+          "threshold": 0.678836,
+          "attack_frames": 250,
+          "normal_frames": 1200,
+          "detected_rate": 0.732,
+          "false_alarm_rate": 0.011667
+        },
+        {
+          "seed": 123,
+          "threshold": 0.679175,
+          "attack_frames": 250,
+          "normal_frames": 1200,
+          "detected_rate": 0.456,
+          "false_alarm_rate": 0.008333
+        }
+      ],
+      "detected_rate_mean": 0.598667,
+      "detected_rate_min": 0.456,
+      "detected_rate_max": 0.732,
+      "false_alarm_rate_mean": 0.010833
+    },
+    "gear_spoof": {
+      "runs": [
+        {
+          "seed": 42,
+          "threshold": 0.685777,
+          "attack_frames": 250,
+          "normal_frames": 1200,
+          "detected_rate": 0.924,
+          "false_alarm_rate": 0.011667
+        },
+        {
+          "seed": 7,
+          "threshold": 0.678836,
+          "attack_frames": 250,
+          "normal_frames": 1200,
+          "detected_rate": 0.984,
+          "false_alarm_rate": 0.011667
+        },
+        {
+          "seed": 123,
+          "threshold": 0.679175,
+          "attack_frames": 250,
+          "normal_frames": 1200,
+          "detected_rate": 0.976,
+          "false_alarm_rate": 0.0075
+        }
+      ],
+      "detected_rate_mean": 0.961333,
+      "detected_rate_min": 0.924,
+      "detected_rate_max": 0.984,
+      "false_alarm_rate_mean": 0.010278
+    },
+    "rpm_spoof": {
+      "runs": [
+        {
+          "seed": 42,
+          "threshold": 0.685777,
+          "attack_frames": 250,
+          "normal_frames": 1200,
+          "detected_rate": 0.82,
+          "false_alarm_rate": 0.009167
+        },
+        {
+          "seed": 7,
+          "threshold": 0.678836,
+          "attack_frames": 250,
+          "normal_frames": 1200,
+          "detected_rate": 0.948,
+          "false_alarm_rate": 0.009167
+        },
+        {
+          "seed": 123,
+          "threshold": 0.679175,
+          "attack_frames": 250,
+          "normal_frames": 1200,
+          "detected_rate": 0.844,
+          "false_alarm_rate": 0.009167
+        }
+      ],
+      "detected_rate_mean": 0.870667,
+      "detected_rate_min": 0.82,
+      "detected_rate_max": 0.948,
+      "false_alarm_rate_mean": 0.009167
+    }
+  }
+}
