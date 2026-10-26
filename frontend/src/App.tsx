@@ -1,5 +1,6 @@
 import { Activity, Database, Radar, ShieldAlert } from "lucide-react";
 import { Card } from "./shared/components/Card";
+import { ModelsPanel } from "./modules/ml";
 
 const cards = [
   { label: "Datasets", value: "1", icon: Database },
@@ -18,6 +19,7 @@ export default function App() {
         <section className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {cards.map(({ label, value, icon: Icon }) => <Card key={label} label={label} value={value} icon={<Icon size={20} />} />)}
         </section>
+        <ModelsPanel />
       </div>
     </main>
   );
