@@ -12,6 +12,8 @@ dist/
 .DS_Store
 data/*
 !data/.gitkeep
+!data/samples/
+!data/samples/*.csv
 coverage.xml
 .coverage
 

@@ -17,7 +17,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Query
 
-from app.modules.alerts.schemas import AlertOut, AlertSummary
+from app.modules.alerts.schemas import AlertSummary
 from app.modules.alerts.service import AlertService
 
 router = APIRouter()

@@ -8,18 +8,15 @@ Endpoints:
 
 from __future__ import annotations
 
-import os
-from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-router = APIRouter()
+from app.core.paths import get_samples_dir
 
-_REPO_ROOT = Path(__file__).resolve().parents[4]
-_SAMPLES_DIR = _REPO_ROOT / "data" / "samples"
+router = APIRouter()
 
 
 def _format_size(size_bytes: int) -> str:
@@ -42,8 +39,9 @@ class DatasetUploadPayload(BaseModel):
 async def list_datasets() -> dict:
     """Return id, name, row-count, and file size for every CSV in data/samples/."""
     items = []
-    if _SAMPLES_DIR.exists():
-        for p in sorted(_SAMPLES_DIR.glob("*.csv")):
+    samples_dir = get_samples_dir()
+    if samples_dir.exists():
+        for p in sorted(samples_dir.glob("*.csv")):
             try:
                 size_bytes = p.stat().st_size
                 with open(p, "r", encoding="utf-8", errors="ignore") as f:
@@ -70,9 +68,10 @@ async def get_dataset_details(dataset_id: str) -> dict:
     if ".." in dataset_id or "/" in dataset_id or "\\" in dataset_id:
         raise HTTPException(status_code=422, detail="Invalid dataset_id: path traversal forbidden.")
 
-    target = _SAMPLES_DIR / f"{dataset_id}.csv"
+    samples_dir = get_samples_dir()
+    target = samples_dir / f"{dataset_id}.csv"
     if not target.exists():
-        target = _SAMPLES_DIR / dataset_id
+        target = samples_dir / dataset_id
         if not target.exists():
             raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found.")
 
@@ -137,8 +136,9 @@ async def upload_dataset(payload: DatasetUploadPayload) -> dict:
     if len(payload.content.strip()) == 0:
         raise HTTPException(status_code=400, detail="Uploaded file content is empty.")
 
-    _SAMPLES_DIR.mkdir(parents=True, exist_ok=True)
-    destination = _SAMPLES_DIR / safe_name
+    samples_dir = get_samples_dir()
+    samples_dir.mkdir(parents=True, exist_ok=True)
+    destination = samples_dir / safe_name
 
     with open(destination, "w", encoding="utf-8") as f:
         f.write(payload.content)

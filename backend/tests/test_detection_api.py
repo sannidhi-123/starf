@@ -10,23 +10,15 @@ import os
 import tempfile
 from pathlib import Path
 
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 # Override DATABASE_URL before any app import
 _TMP = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
 _TMP.close()
 _TMP_DB_PATH = _TMP.name
 os.environ["DATABASE_URL"] = f"sqlite:///{_TMP_DB_PATH}"
-
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
-import app.core.database as _db_module
-from app.main import app
-
-
-# ---------------------------------------------------------------------------
-# DB setup â€” patch engine before TestClient starts the lifespan
-# ---------------------------------------------------------------------------
 
 _ASYNC_URL = f"sqlite+aiosqlite:///{_TMP_DB_PATH}"
 _TMP_ENGINE = create_async_engine(_ASYNC_URL, echo=False)
@@ -34,30 +26,41 @@ _TMP_SF: async_sessionmaker[AsyncSession] = async_sessionmaker(
     bind=_TMP_ENGINE, expire_on_commit=False
 )
 
+import app.core.database as _db_module  # noqa: E402
+
 # Patch immediately at import time so the module-level engine is replaced
 # before the TestClient lifespan triggers init_db().
 _db_module.engine = _TMP_ENGINE
 _db_module.SessionLocal = _TMP_SF
 
+from app.main import app  # noqa: E402
+
 
 @pytest.fixture(scope="module", autouse=True)
 async def setup_db():
     """Create tables once; drop + clean up after module completes."""
+    _db_module.engine = _TMP_ENGINE
+    _db_module.SessionLocal = _TMP_SF
+
     import app.modules.alerts.models  # noqa: F401
 
     async with _TMP_ENGINE.begin() as conn:
         await conn.run_sync(_db_module.Base.metadata.create_all)
 
-    yield
-
-    async with _TMP_ENGINE.begin() as conn:
-        await conn.run_sync(_db_module.Base.metadata.drop_all)
-    await _TMP_ENGINE.dispose()
-    Path(_TMP_DB_PATH).unlink(missing_ok=True)
+    try:
+        yield
+    finally:
+        try:
+            async with _TMP_ENGINE.begin() as conn:
+                await conn.run_sync(_db_module.Base.metadata.drop_all)
+        except Exception:
+            pass
+        await _TMP_ENGINE.dispose()
+        Path(_TMP_DB_PATH).unlink(missing_ok=True)
 
 
 @pytest.fixture(scope="module")
-def client():
+def client(setup_db):
     with TestClient(app, raise_server_exceptions=True) as c:
         yield c
 

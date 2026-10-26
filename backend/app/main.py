@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
 from app.core.config import settings
-from app.core.database import init_db
+from app.core.database import close_db, init_db
 from app.core.logging import configure_logging
 
 
@@ -13,7 +13,11 @@ from app.core.logging import configure_logging
 async def lifespan(_: FastAPI):
     configure_logging()
     await init_db()
-    yield
+    try:
+        yield
+    finally:
+        await close_db()
+
 
 
 app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)

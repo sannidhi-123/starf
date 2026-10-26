@@ -149,7 +149,21 @@ class DetectionPipeline:
                           the BaselineProfiler (Car-Hacking format).
         """
         rules_path = Path(rules_yaml)
+        if not rules_path.is_file():
+            for parent in [Path.cwd()] + list(Path.cwd().parents):
+                candidate = parent / rules_yaml
+                if candidate.is_file():
+                    rules_path = candidate
+                    break
+
         csv_path = Path(baseline_csv)
+        if not csv_path.is_file():
+            for parent in [Path.cwd()] + list(Path.cwd().parents):
+                candidate = parent / baseline_csv
+                if candidate.is_file():
+                    csv_path = candidate
+                    break
+
         if not csv_path.exists():
             raise FileNotFoundError(f"Baseline CSV not found: {csv_path}")
 

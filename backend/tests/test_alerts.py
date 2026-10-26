@@ -21,7 +21,6 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 # ---------------------------------------------------------------------------
@@ -35,12 +34,21 @@ _TMP_DB_URL = f"sqlite:///{_TMP_DB_PATH}"
 
 os.environ["DATABASE_URL"] = _TMP_DB_URL
 
+# Patch engine + SessionLocal immediately before app components initialize
+_ASYNC_URL = _TMP_DB_URL.replace("sqlite:///", "sqlite+aiosqlite:///")
+_TMP_ENGINE = create_async_engine(_ASYNC_URL, echo=False)
+_TMP_SF: async_sessionmaker[AsyncSession] = async_sessionmaker(
+    bind=_TMP_ENGINE, expire_on_commit=False
+)
 
 # ---------------------------------------------------------------------------
 # Now it is safe to import app modules.
 # ---------------------------------------------------------------------------
 import app.core.database as _db_module  # noqa: E402
-from app.core.config import get_settings  # noqa: E402
+
+_db_module.engine = _TMP_ENGINE
+_db_module.SessionLocal = _TMP_SF
+
 from app.main import app  # noqa: E402
 from app.modules.alerts.service import AlertService  # noqa: E402
 
@@ -53,34 +61,28 @@ from app.modules.alerts.service import AlertService  # noqa: E402
 @pytest.fixture(scope="module", autouse=True)
 async def setup_db():
     """Create all tables in the temp SQLite file once per module."""
-    # Patch engine + SessionLocal to point at the temp file
-    async_url = _TMP_DB_URL.replace("sqlite:///", "sqlite+aiosqlite:///")
-    tmp_engine = create_async_engine(async_url, echo=False)
-    tmp_session_factory: async_sessionmaker[AsyncSession] = async_sessionmaker(
-        bind=tmp_engine, expire_on_commit=False
-    )
+    _db_module.engine = _TMP_ENGINE
+    _db_module.SessionLocal = _TMP_SF
 
-    # Monkey-patch the module-level singletons so all services use tmp DB
-    _db_module.engine = tmp_engine
-    _db_module.SessionLocal = tmp_session_factory
-
-    # Create tables
     import app.modules.alerts.models  # noqa: F401 — registers Alert with Base
 
-    async with tmp_engine.begin() as conn:
+    async with _TMP_ENGINE.begin() as conn:
         await conn.run_sync(_db_module.Base.metadata.create_all)
 
-    yield
-
-    # Cleanup
-    async with tmp_engine.begin() as conn:
-        await conn.run_sync(_db_module.Base.metadata.drop_all)
-    await tmp_engine.dispose()
-    Path(_TMP_DB_PATH).unlink(missing_ok=True)
+    try:
+        yield
+    finally:
+        try:
+            async with _TMP_ENGINE.begin() as conn:
+                await conn.run_sync(_db_module.Base.metadata.drop_all)
+        except Exception:
+            pass
+        await _TMP_ENGINE.dispose()
+        Path(_TMP_DB_PATH).unlink(missing_ok=True)
 
 
 @pytest.fixture(scope="module")
-async def seeded_service():
+async def seeded_service(setup_db):
     """Insert 3 alerts and return the AlertService instance."""
     svc = AlertService()
 
@@ -196,7 +198,7 @@ async def test_summary_no_run_filter(seeded_service):
 
 
 @pytest.fixture(scope="module")
-def client():
+def client(setup_db):
     """TestClient that exercises the real FastAPI app (lifespan enabled)."""
     with TestClient(app, raise_server_exceptions=True) as c:
         yield c

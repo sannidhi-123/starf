@@ -44,3 +44,10 @@ async def init_db() -> None:
     async with engine.begin() as connection:
         await connection.execute(text("SELECT 1"))
         await connection.run_sync(Base.metadata.create_all)
+
+
+async def close_db() -> None:
+    """Dispose of the database engine and close all pooled connections."""
+    global engine
+    if engine is not None:
+        await engine.dispose()

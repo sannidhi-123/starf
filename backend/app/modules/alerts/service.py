@@ -7,15 +7,24 @@ the service opens its own session via ``SessionLocal``.
 
 from __future__ import annotations
 
-from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Any, Optional
 
 from sqlalchemy import delete, func, select
 
-from app.core.database import SessionLocal
+from app.core import database as _db
 from app.modules.alerts.models import Alert
 from app.modules.alerts.schemas import AlertOut, AlertSummary
+
+
+class _SessionFactoryProxy:
+    """Proxy that dynamically resolves the active session factory from app.core.database."""
+
+    def __call__(self, *args: Any, **kwargs: Any):
+        return _db.SessionLocal(*args, **kwargs)
+
+
+SessionLocal = _SessionFactoryProxy()
 
 
 class AlertService:

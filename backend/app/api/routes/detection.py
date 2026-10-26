@@ -7,8 +7,7 @@ alerts, and returns a rich result payload.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
-from pydantic import ValidationError
+from fastapi import APIRouter
 
 from app.modules.detection.schemas import DetectionRunRequest
 from app.modules.detection.service import DetectionService

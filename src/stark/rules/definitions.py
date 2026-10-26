@@ -214,7 +214,7 @@ def r2_impossible_dt(
     if dt_same_id < learned_floor:
         x_ms = dt_same_id * 1000.0
         y_ms = learned_floor * 1000.0
-        reason = f"Î”t={x_ms:.1f}ms below learned floor {y_ms:.1f}ms"
+        reason = f"Δt={x_ms:.1f}ms below learned floor {y_ms:.1f}ms"
         return RuleHit(rule_id="R2", reason=reason, weight=3, verdict="VIOLATION")
 
     return None

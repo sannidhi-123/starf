@@ -19,6 +19,12 @@ import importlib
 import json
 from pathlib import Path
 import sys
+import time
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
+import pandas as pd
+import yaml
 
 # Ensure src/ and repo root are in sys.path
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -28,15 +34,8 @@ if str(SRC_DIR) not in sys.path:
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-import time
-from typing import Any, Dict, List, Optional, Tuple
-
-import numpy as np
-import pandas as pd
-import yaml
-
-from stark.baseline.profiler import BaselineProfiler
-from stark.rules.definitions import (
+from stark.baseline.profiler import BaselineProfiler  # noqa: E402
+from stark.rules.definitions import (  # noqa: E402
     FEATURE_CAN_ID,
     FEATURE_DELTA_T,
     FEATURE_DLC,
@@ -44,7 +43,7 @@ from stark.rules.definitions import (
     FEATURE_MSG_RATE_50MS,
     FEATURE_REPETITION_COUNT,
 )
-from stark.rules.engine import RuleEngine
+from stark.rules.engine import RuleEngine  # noqa: E402
 
 
 def calculate_50ms_message_count_p999(

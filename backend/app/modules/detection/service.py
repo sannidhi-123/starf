@@ -9,14 +9,9 @@ from typing import Any, Dict, List
 import pandas as pd
 from fastapi import HTTPException
 
+from app.core.paths import get_repo_root, get_rules_yaml, get_samples_dir
 from app.modules.alerts.service import AlertService
 from app.modules.detection.schemas import DetectionRunRequest, JobStatus
-
-# Resolve paths relative to the repo root (two levels above backend/)
-_REPO_ROOT = Path(__file__).resolve().parents[4]
-_SAMPLES_DIR = _REPO_ROOT / "data" / "samples"
-_RULES_YAML = _REPO_ROOT / "config" / "rules.yaml"
-_BASELINE_CSV = _SAMPLES_DIR / "fixture.csv"
 
 
 def _load_pipeline():
@@ -24,15 +19,19 @@ def _load_pipeline():
     import sys
 
     # Ensure src/ is importable when running uvicorn directly from backend/
-    src_dir = str(_REPO_ROOT / "src")
+    repo_root = get_repo_root()
+    src_dir = str(repo_root / "src")
     if src_dir not in sys.path:
         sys.path.insert(0, src_dir)
 
     from stark.pipeline.runner import DetectionPipeline
 
+    rules_yaml = get_rules_yaml()
+    baseline_csv = get_samples_dir() / "fixture.csv"
+
     return DetectionPipeline.from_config(
-        rules_yaml=str(_RULES_YAML),
-        baseline_csv=str(_BASELINE_CSV),
+        rules_yaml=str(rules_yaml),
+        baseline_csv=str(baseline_csv),
     )
 
 
@@ -126,12 +125,13 @@ class DetectionService:
             # Guard against path traversal
             if ".." in ds_id or "/" in ds_id or "\\" in ds_id:
                 raise HTTPException(status_code=422, detail="Invalid dataset_id: path traversal not allowed.")
-            csv_path = _SAMPLES_DIR / f"{ds_id}.csv"
+            samples_dir = get_samples_dir()
+            csv_path = samples_dir / f"{ds_id}.csv"
             if not csv_path.exists():
                 raise HTTPException(
                     status_code=404,
                     detail=f"Dataset '{ds_id}' not found. Available: "
-                    + ", ".join(p.stem for p in _SAMPLES_DIR.glob("*.csv")),
+                    + ", ".join(p.stem for p in samples_dir.glob("*.csv")),
                 )
             raw_frames = _csv_to_frames(csv_path)
         else:
