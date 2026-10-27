@@ -16,10 +16,11 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import settings
+from app.modules.dataset.models import Base as DatasetBase
 
 
 def _async_url(url: str) -> str:
-    return url.replace("sqlite:///", "sqlite+aiosqlite:///")
+    return url.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
 
 
 engine: AsyncEngine = create_async_engine(
@@ -30,6 +31,8 @@ SessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
     bind=engine,
     expire_on_commit=False,
 )
+# Alias used by origin/main's dataset module
+SessionFactory = SessionLocal
 
 
 class Base(DeclarativeBase):
@@ -44,6 +47,8 @@ async def init_db() -> None:
     async with engine.begin() as connection:
         await connection.execute(text("SELECT 1"))
         await connection.run_sync(Base.metadata.create_all)
+        # Also ensure dataset tables (managed by DatasetBase) are created
+        await connection.run_sync(DatasetBase.metadata.create_all)
         # create_all does not add columns to an existing SQLite database.
         if connection.dialect.name == "sqlite":
             columns = await connection.exec_driver_sql("PRAGMA table_info(alerts)")

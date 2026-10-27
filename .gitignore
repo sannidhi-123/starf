@@ -13,6 +13,7 @@ node_modules/
 dist/
 .DS_Store
 data/*
+backend/data/
 !data/.gitkeep
 !data/samples/
 !data/samples/*.csv
