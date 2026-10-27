@@ -4,7 +4,7 @@ Status: FAIL.
 
 The full fixture upload returned no dataset ID because Step 5 validation rejected its first invalid row. A separate one-row valid control upload was used to check whether the existing detection API consumes `dataset_id`.
 
-Request: `POST /api/v1/detection/run` with `{"dataset_id": "1327a777-9ed0-4d31-9172-4618fb1bb8e7"}`.
+Request: `POST /api/v1/detection/run` with `{"dataset_id": "eac90823-bfee-43ef-9cfd-87ccae848720"}`.
 
 Response status: 200.
 
