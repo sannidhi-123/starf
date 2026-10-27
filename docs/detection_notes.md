@@ -1,7 +1,7 @@
 # STARK Detection Pipeline — Engineering Reference Notes (Day 1)
 
-> **Author**: Person 2 (Detection Pipeline Module Lead)  
-> **Scope**: Stage 1 Rule Engine, Hybrid Fusion, Severity Scoring, Alerting, Pipeline Orchestration, Detection APIs  
+> **Author**: Person 2 (Detection Pipeline Module Lead)
+> **Scope**: Stage 1 Rule Engine, Hybrid Fusion, Severity Scoring, Alerting, Pipeline Orchestration, Detection APIs
 > **Status**: Working reference document for the 28-day roadmap.
 
 ---

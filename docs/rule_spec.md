@@ -1,9 +1,9 @@
 # STARK Stage 1 Rule Specification
 
-> **Document**: `docs/rule_spec.md`  
-> **Author**: Person 2 (Detection Pipeline Module Lead)  
-> **Status**: Frozen Design Spec (Stage 1 Deterministic Rules)  
-> **Date**: Roadmap Day 3  
+> **Document**: `docs/rule_spec.md`
+> **Author**: Person 2 (Detection Pipeline Module Lead)
+> **Status**: Frozen Design Spec (Stage 1 Deterministic Rules)
+> **Date**: Roadmap Day 3
 > **Related Documents**: [`docs/can_protocol_primer.md`](file:///Users/sannidhichouthayi/Documents/starf/docs/can_protocol_primer.md), [`config/rules.yaml`](file:///Users/sannidhichouthayi/Documents/starf/config/rules.yaml)
 
 ---
@@ -41,7 +41,7 @@ Each rule evaluates independently to a boolean trigger state. When triggered, it
 
 ### 2.2 Composite Verdict Logic
 
-Let $\mathcal{R}_{\text{fired}} \subseteq \{\text{R1}, \dots, \text{R7}\}$ be the set of rules that fired on the current frame.  
+Let $\mathcal{R}_{\text{fired}} \subseteq \{\text{R1}, \dots, \text{R7}\}$ be the set of rules that fired on the current frame.
 The total Stage 1 score is defined as:
 
 $$\text{rule\_score} = \sum_{r \in \mathcal{R}_{\text{fired}}} w_r$$

@@ -1,9 +1,9 @@
 # CAN 2.0B Protocol Fundamentals & Attack Grounding
 
-> **Document**: `docs/can_protocol_primer.md`  
-> **Author**: Person 2 (Detection Pipeline Module Lead)  
-> **Target Audience**: STARK Engineering Team, Evaluators, and Automotive Security Researchers  
-> **Date**: Roadmap Day 2  
+> **Document**: `docs/can_protocol_primer.md`
+> **Author**: Person 2 (Detection Pipeline Module Lead)
+> **Target Audience**: STARK Engineering Team, Evaluators, and Automotive Security Researchers
+> **Date**: Roadmap Day 2
 > **Purpose**: Establish the physical, architectural, and mathematical foundations of Controller Area Network (CAN 2.0B) communication, grounding each of the 7 Stage 1 deterministic rules in protocol mechanics rather than arbitrary heuristic thresholds.
 
 ---
@@ -151,7 +151,7 @@ Fuzzing attacks, penetration testing scanners, and unconfigured aftermarket OBD-
 $$\text{Trigger: } \Delta t = t_i - t_{i-1} < \Delta t_{\text{min}}$$
 
 #### CAN-Level Reasoning
-At the physical bit level on a standard 500 kbps CAN bus, a single bit requires $2.0\,\mu\text{s}$. A complete CAN 2.0B frame with an 8-byte payload, CRC, ACK, inter-frame space, and worst-case bit stuffing spans approximately **111 to 135 bit times**, establishing a hard physical transmission floor of **$\approx 220\,\mu\text{s}$ to $270\,\mu\text{s}$**. Furthermore, an authentic ECU generates a specific ID via a dedicated periodic RTOS software timer (e.g., $T_{\text{nominal}} = 20\,\text{ms}$). 
+At the physical bit level on a standard 500 kbps CAN bus, a single bit requires $2.0\,\mu\text{s}$. A complete CAN 2.0B frame with an 8-byte payload, CRC, ACK, inter-frame space, and worst-case bit stuffing spans approximately **111 to 135 bit times**, establishing a hard physical transmission floor of **$\approx 220\,\mu\text{s}$ to $270\,\mu\text{s}$**. Furthermore, an authentic ECU generates a specific ID via a dedicated periodic RTOS software timer (e.g., $T_{\text{nominal}} = 20\,\text{ms}$).
 
 If two frames carrying the identical CAN ID appear within $\Delta t < \Delta t_{\text{min}}$ (e.g., $< 0.5\,\text{ms}$ or $< 5\%\text{ of } T_{\text{nominal}}$), they physically cannot both originate from the genuine single-threaded ECU task. This condition mathematically proves that **two independent transmitters are contending for that ID**—the legitimate ECU alongside an adversarial node injecting spoofed frames onto the physical bus.
 
@@ -171,7 +171,7 @@ In order to override legitimate vehicle behavior (such as acceleration or brakin
 $$\text{Trigger: } f_{\text{window}}(\text{bus}) > f_{\text{max}} \quad \text{or} \quad f_{\text{window}}(\text{ID}) > f_{\text{burst}}$$
 
 #### CAN-Level Reasoning
-Total bus throughput on a 500 kbps CAN network is mathematically capped at approximately **4,000 frames/second** (assuming standard 8-byte frames under back-to-back transmission). OEM network architects intentionally budget baseline vehicle bus load between **30% and 50% utilization** (~1,200 to 2,000 frames/sec) to provide sufficient idle bus margins and guarantee worst-case latencies for lower-priority safety frames during peak driving events. 
+Total bus throughput on a 500 kbps CAN network is mathematically capped at approximately **4,000 frames/second** (assuming standard 8-byte frames under back-to-back transmission). OEM network architects intentionally budget baseline vehicle bus load between **30% and 50% utilization** (~1,200 to 2,000 frames/sec) to provide sufficient idle bus margins and guarantee worst-case latencies for lower-priority safety frames during peak driving events.
 
 An abrupt surge in aggregate message frequency—or a burst of an individual ID exceeding its configured limits—violates the engineered bus capacity. Because of CAN's bitwise arbitration, high-frequency dominant transmissions monopolize the transceiver state, starving legitimate ECUs of arbitration wins and driving the physical bus to saturation.
 
@@ -185,7 +185,7 @@ Denial-of-Service (DoS) attacks systematically inject zero-dominant frames (`0x0
 $$\text{Trigger: } \text{DLC} \notin [0, 8] \quad \text{or} \quad \text{DLC} \neq \text{DLC}_{\text{expected}}(\text{ID})$$
 
 #### CAN-Level Reasoning
-In classical CAN 2.0B, the Data Length Code specifies an integer payload length between 0 and 8 bytes. In automotive manufacturing, every message ID has a rigid, static signal layout defined in the DBC file; an ECU's transmission buffer and serialization routine are compiled with fixed lengths. For instance, a vehicle speed message is permanently configured as an 8-byte frame. 
+In classical CAN 2.0B, the Data Length Code specifies an integer payload length between 0 and 8 bytes. In automotive manufacturing, every message ID has a rigid, static signal layout defined in the DBC file; an ECU's transmission buffer and serialization routine are compiled with fixed lengths. For instance, a vehicle speed message is permanently configured as an 8-byte frame.
 
 An ECU never dynamically varies its payload length during normal operation. A frame observed with an out-of-spec DLC ($> 8$), or a DLC deviating from the vehicle profile's expected value for that specific ID, indicates synthetic packet construction. Such packets are generated by external software or fuzzing utilities that fail to emulate the OEM's static transmission constraints.
 
@@ -240,7 +240,7 @@ Spoofing attacks targeting drive-by-wire subsystems directly overwrite target se
 $$\text{Trigger: } \Delta t_{\text{elapsed}} > \tau_{\text{timeout}} = M \times T_{\text{nominal}} \quad (M \ge 3)$$
 
 #### CAN-Level Reasoning
-Every critical ECU on a vehicle network maintains a heartbeat broadcast. Safety-critical recipient nodes run internal watchdog timers programmed to enter a fail-safe state if an expected periodic message is absent for more than $3\times$ to $5\times$ its cycle time. 
+Every critical ECU on a vehicle network maintains a heartbeat broadcast. Safety-critical recipient nodes run internal watchdog timers programmed to enter a fail-safe state if an expected periodic message is absent for more than $3\times$ to $5\times$ its cycle time.
 
 If an authorized periodic ID ceases transmission on the physical bus, it indicates that the transmitting node has been silenced. In an adversarial context, this is achieved via a **Bus-Off Attack**: the attacker injects targeted dominant bits during the recessive portions of the victim's transmission, forcing the victim's internal Transmit Error Counter (TEC) past the protocol limit of 255 and driving it into the **Bus-Off state**, physically disconnecting it from the network.
 
