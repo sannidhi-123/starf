@@ -27,6 +27,7 @@ class AlertOut(BaseModel):
     severity_score: int
     rule_ids: str
     reason: str
+    details: dict = Field(default_factory=dict)
 
     @computed_field  # type: ignore[prop-decorator]
     @property

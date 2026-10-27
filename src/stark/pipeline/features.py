@@ -1,6 +1,6 @@
 """Streaming (causal) per-run feature extractor for CAN frames.
 
-Computes the four derived features required by the Stage 1 RuleEngine using only
+Computes causal derived features required by the Stage 1 RuleEngine and Stage 2 using only
 information available at the time each frame arrives — no look-ahead.  State is
 reset via :meth:`reset` between runs.
 """
@@ -8,6 +8,7 @@ reset via :meth:`reset` between runs.
 from __future__ import annotations
 
 import collections
+import math
 from typing import Any, Dict, List, Optional
 
 from stark.rules.definitions import (
@@ -19,8 +20,10 @@ from stark.rules.definitions import (
     FEATURE_REPETITION_COUNT,
 )
 
-# Sliding-window width in seconds (50 ms)
+# Sliding-window widths in seconds. The ID count is a separate signal from the
+# existing consecutive-identical-payload counter used by R5.
 _WINDOW_SEC: float = 0.050
+_ID_COUNT_WINDOW_SEC: float = 0.050
 
 
 def _parse_can_id(val: Any) -> int:
@@ -82,7 +85,10 @@ class StreamingFeatures:
             verdict = engine.evaluate(enriched)
     """
 
-    def __init__(self) -> None:
+    def __init__(self, id_count_window_sec: float = _ID_COUNT_WINDOW_SEC) -> None:
+        if id_count_window_sec <= 0:
+            raise ValueError("id_count_window_sec must be positive")
+        self.id_count_window_sec = float(id_count_window_sec)
         self.reset()
 
     def reset(self) -> None:
@@ -95,6 +101,9 @@ class StreamingFeatures:
         self._rep_counts: Dict[int, int] = {}
         # Bus-wide sliding window of timestamps for msg_rate_50ms
         self._window_ts: collections.deque[float] = collections.deque()
+        # CAN ID occurrence history for the causal ID Repetition Count.
+        self._id_window: collections.deque[tuple[float, int]] = collections.deque()
+        self._last_timestamp: Optional[float] = None
 
     def update(self, frame: Dict[str, Any]) -> Dict[str, Any]:
         """Enrich *frame* with the four derived features and return the enriched dict.
@@ -126,13 +135,14 @@ class StreamingFeatures:
         raw_dlc = frame.get("dlc", frame.get("DLC", 0))
         dlc: int = int(raw_dlc) if raw_dlc is not None else 0
 
-        ts_raw = frame.get("timestamp", frame.get("Timestamp", frame.get("ts", _MISSING)))
+        ts_raw = frame.get(
+            "timestamp", frame.get("Timestamp", frame.get("ts", _MISSING))
+        )
         timestamp: Optional[float] = None
         if ts_raw is not _MISSING and ts_raw is not None:
             try:
                 _f_val = float(ts_raw)
-                import math
-                if not math.isnan(_f_val):
+                if math.isfinite(_f_val):
                     timestamp = _f_val
             except (ValueError, TypeError):
                 timestamp = None
@@ -147,7 +157,11 @@ class StreamingFeatures:
             # Fallback: read DATA[0..7] columns
             byte_vals: List[int] = []
             for i in range(8):
-                v = frame.get(f"DATA[{i}]") or frame.get(f"data_{i}") or frame.get(f"d{i}")
+                v = (
+                    frame.get(f"DATA[{i}]")
+                    or frame.get(f"data_{i}")
+                    or frame.get(f"d{i}")
+                )
                 if v is not None and str(v).strip():
                     try:
                         byte_vals.append(int(str(v).strip(), 16) & 0xFF)
@@ -163,15 +177,21 @@ class StreamingFeatures:
         # ------------------------------------------------------------------ #
         dt_same_id: Optional[float] = None
         if timestamp is not None:
-            if can_id in self._last_seen_time:
+            # Out-of-order observations do not rewind any causal state.
+            in_order = self._last_timestamp is None or timestamp >= self._last_timestamp
+            if in_order and can_id in self._last_seen_time:
                 dt_same_id = timestamp - self._last_seen_time[can_id]
-            self._last_seen_time[can_id] = timestamp
+            if in_order:
+                self._last_seen_time[can_id] = timestamp
+                self._last_timestamp = timestamp
 
         # ------------------------------------------------------------------ #
         # 3. msg_rate_50ms — bus-wide frame count in the trailing 50 ms window
         # ------------------------------------------------------------------ #
         msg_rate_50ms: int = 0
-        if timestamp is not None:
+        if timestamp is not None and (
+            self._last_timestamp is None or timestamp >= self._last_timestamp
+        ):
             self._window_ts.append(timestamp)
             cutoff = timestamp - _WINDOW_SEC
             while self._window_ts and self._window_ts[0] < cutoff:
@@ -187,6 +207,19 @@ class StreamingFeatures:
             self._rep_counts[can_id] = 1
         id_repetition_count: int = self._rep_counts[can_id]
 
+        # Count this ID's frames in the trailing, inclusive window using only
+        # this frame and observations already seen. Invalid/out-of-order times
+        # produce 0 and leave the history untouched.
+        can_id_count_window = 0
+        if timestamp is not None and (
+            not self._id_window or timestamp >= self._id_window[-1][0]
+        ):
+            cutoff = timestamp - self.id_count_window_sec
+            while self._id_window and self._id_window[0][0] < cutoff:
+                self._id_window.popleft()
+            self._id_window.append((timestamp, can_id))
+            can_id_count_window = sum(cid == can_id for _, cid in self._id_window)
+
         # ------------------------------------------------------------------ #
         # 5. hamming_prev_same_id — bit distance to previous payload of same ID
         # ------------------------------------------------------------------ #
@@ -195,6 +228,14 @@ class StreamingFeatures:
             hamming_prev_same_id = _hamming(p_bytes, self._last_payload[can_id])
 
         self._last_payload[can_id] = p_bytes
+
+        byte_entropy = 0.0
+        if p_bytes:
+            counts = collections.Counter(p_bytes)
+            byte_entropy = -sum(
+                (count / len(p_bytes)) * math.log2(count / len(p_bytes))
+                for count in counts.values()
+            )
 
         # ------------------------------------------------------------------ #
         # 6. Return enriched frame dict
@@ -205,5 +246,8 @@ class StreamingFeatures:
         result[FEATURE_DELTA_T] = dt_same_id
         result[FEATURE_MSG_RATE_50MS] = msg_rate_50ms
         result[FEATURE_REPETITION_COUNT] = id_repetition_count
+        result["can_id_count_50ms"] = can_id_count_window
         result[FEATURE_HAMMING_DISTANCE] = hamming_prev_same_id
+        result["payload_hamming_distance"] = hamming_prev_same_id
+        result["byte_entropy"] = byte_entropy
         return result

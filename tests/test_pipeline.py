@@ -43,6 +43,41 @@ def test_streaming_features_dt_per_id_independent():
     assert r["dt_same_id"] == pytest.approx(1.0, abs=1e-6)
 
 
+def test_can_id_count_window_counts_current_and_recent_same_id_frames():
+    sf = StreamingFeatures(id_count_window_sec=0.05)
+    assert (
+        sf.update({"timestamp": 1.0, "can_id": 0x100, "dlc": 0})["can_id_count_50ms"]
+        == 1
+    )
+    sf.update({"timestamp": 1.02, "can_id": 0x200, "dlc": 0})
+    result = sf.update({"timestamp": 1.05, "can_id": 0x100, "dlc": 0})
+    assert result["can_id_count_50ms"] == 2  # inclusive lower boundary
+
+
+def test_can_id_count_window_expires_old_entries_and_ignores_out_of_order_time():
+    sf = StreamingFeatures(id_count_window_sec=0.05)
+    sf.update({"timestamp": 1.0, "can_id": 0x100, "dlc": 0})
+    assert (
+        sf.update({"timestamp": 1.051, "can_id": 0x100, "dlc": 0})["can_id_count_50ms"]
+        == 1
+    )
+    assert (
+        sf.update({"timestamp": 0.9, "can_id": 0x100, "dlc": 0})["can_id_count_50ms"]
+        == 0
+    )
+
+
+def test_can_id_count_missing_or_malformed_timestamp_is_zero():
+    sf = StreamingFeatures()
+    assert (
+        sf.update({"timestamp": "not-a-time", "can_id": 0x100, "dlc": 0})[
+            "can_id_count_50ms"
+        ]
+        == 0
+    )
+    assert sf.update({"can_id": 0x100, "dlc": 0})["can_id_count_50ms"] == 0
+
+
 def test_streaming_features_msg_rate_50ms():
     """msg_rate_50ms counts frames in the trailing 50 ms bus-wide window."""
     sf = StreamingFeatures()
@@ -129,7 +164,9 @@ def test_pipeline_dos_sample_gives_alerts(pipeline):
                 except ValueError:
                     pass
         payload = "".join(f"{b:02X}" for b in byte_vals)
-        frames.append({"timestamp": ts, "can_id": str(can_id_raw), "dlc": dlc, "payload": payload})
+        frames.append(
+            {"timestamp": ts, "can_id": str(can_id_raw), "dlc": dlc, "payload": payload}
+        )
 
     result = pipeline.run(frames)
     assert result["alert_count"] > 0, "DoS dataset should produce alerts"
@@ -155,7 +192,9 @@ def test_pipeline_normal_sample_few_alerts(pipeline):
                 except ValueError:
                     pass
         payload = "".join(f"{b:02X}" for b in byte_vals)
-        frames.append({"timestamp": ts, "can_id": str(can_id_raw), "dlc": dlc, "payload": payload})
+        frames.append(
+            {"timestamp": ts, "can_id": str(can_id_raw), "dlc": dlc, "payload": payload}
+        )
 
     result = pipeline.run(frames)
     total = result["total_frames"]
@@ -194,12 +233,16 @@ def test_pipeline_ground_truth_dos_accuracy(pipeline):
     df = pd.read_csv(SAMPLES_DIR / "demo_dos_attack.csv", dtype={"CAN ID": str})
     frames = []
     for _, row in df.iterrows():
-        frames.append({
-            "timestamp": float(row["Timestamp"]),
-            "can_id": str(row["CAN ID"]),
-            "dlc": int(row["DLC"]),
-            "payload": "".join(f"{int(row[f'DATA[{i}]'], 16):02X}" for i in range(8)),
-        })
+        frames.append(
+            {
+                "timestamp": float(row["Timestamp"]),
+                "can_id": str(row["CAN ID"]),
+                "dlc": int(row["DLC"]),
+                "payload": "".join(
+                    f"{int(row[f'DATA[{i}]'], 16):02X}" for i in range(8)
+                ),
+            }
+        )
 
     res = pipeline.run(frames)
     assert res["total_frames"] == 300
@@ -216,12 +259,16 @@ def test_pipeline_ground_truth_normal_cleanliness(pipeline):
     df = pd.read_csv(SAMPLES_DIR / "demo_normal.csv", dtype={"CAN ID": str})
     frames = []
     for _, row in df.iterrows():
-        frames.append({
-            "timestamp": float(row["Timestamp"]),
-            "can_id": str(row["CAN ID"]),
-            "dlc": int(row["DLC"]),
-            "payload": "".join(f"{int(row[f'DATA[{i}]'], 16):02X}" for i in range(8)),
-        })
+        frames.append(
+            {
+                "timestamp": float(row["Timestamp"]),
+                "can_id": str(row["CAN ID"]),
+                "dlc": int(row["DLC"]),
+                "payload": "".join(
+                    f"{int(row[f'DATA[{i}]'], 16):02X}" for i in range(8)
+                ),
+            }
+        )
 
     res = pipeline.run(frames)
     assert res["total_frames"] == 300

@@ -37,6 +37,8 @@ export function AlertsView({
   onRunIdFilterChange,
 }: AlertsViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [canIdQuery, setCanIdQuery] = useState("");
+  const [ruleQuery, setRuleQuery] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [showPurgeModal, setShowPurgeModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -44,6 +46,8 @@ export function AlertsView({
 
   // Client-side text search (matches CAN ID, Rule IDs, or Reason)
   const filteredAlerts = alerts.filter((a) => {
+    if (canIdQuery.trim() && !a.can_id_hex.toLowerCase().includes(canIdQuery.toLowerCase()) && !String(a.can_id).includes(canIdQuery)) return false;
+    if (ruleQuery.trim() && !a.rule_ids.toLowerCase().includes(ruleQuery.toLowerCase())) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -167,7 +171,7 @@ export function AlertsView({
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 backdrop-blur-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         {/* Severity Selector */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
             <Filter size={13} /> Severity:
           </span>
           {["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"].map((sev) => (
@@ -186,7 +190,9 @@ export function AlertsView({
         </div>
 
         {/* Search input & Run ID filter */}
-        <div className="flex flex-col sm:flex-row items-center gap-2">
+        <div className="flex flex-col sm:flex-row flex-wrap items-center gap-2">
+          <input aria-label="Filter by CAN ID" type="text" value={canIdQuery} onChange={(e) => setCanIdQuery(e.target.value)} placeholder="Filter CAN ID" className="w-full sm:w-28 rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:border-cyan-500 focus:outline-none font-mono" />
+          <input aria-label="Filter by rule ID" type="text" value={ruleQuery} onChange={(e) => setRuleQuery(e.target.value)} placeholder="Filter rule" className="w-full sm:w-28 rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:border-cyan-500 focus:outline-none font-mono" />
           <div className="relative w-full sm:w-48">
             <input
               type="text"
@@ -277,6 +283,8 @@ export function AlertsView({
                     </td>
                     <td className="py-3 px-3 text-slate-300 max-w-sm truncate" title={a.reason}>
                       {a.reason}
+                      {typeof a.details?.stage2_prediction === "string" && <div className="text-[10px] text-amber-300">Stage 2 ({String(a.details.stage2_mode ?? "unknown")}): {a.details.stage2_prediction}{typeof a.details.stage2_confidence === "number" ? ` · ${(a.details.stage2_confidence * 100).toFixed(1)}%` : ""}</div>}
+                      {Boolean(a.details?.shap_values) && typeof a.details?.shap_values === "object" && <div className="text-[10px] text-cyan-300">SHAP: {Object.entries(a.details.shap_values as Record<string, number>).sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).slice(0, 3).map(([name, value]) => `${name} ${value.toFixed(3)}`).join(" · ")}</div>}
                     </td>
                     <td className="py-3 px-3 text-right">
                       {deleteConfirmId === a.id ? (

@@ -87,6 +87,18 @@ def test_list_datasets(client):
     ids = {item["id"] for item in resp.json()["items"]}
     assert "demo_dos_attack" in ids
     assert "demo_normal" in ids
+    fixture = next(item for item in resp.json()["items"] if item["id"] == "fixture")
+    assert fixture["source_kind"] == "synthetic fixture"
+
+
+def test_ml_status_is_explicit(client):
+    resp = client.get("/api/v1/ml/models")
+    assert resp.status_code == 200
+    stage2 = next(
+        item for item in resp.json()["items"] if item["id"] == "stage2_classifier"
+    )
+    assert stage2["status_label"] == "Demo"
+    assert stage2["metrics"]["available"] is False
 
 
 # ---------------------------------------------------------------------------
@@ -112,6 +124,8 @@ def test_run_dos_dataset_produces_alerts(client):
     assert alerts_resp.status_code == 200
     items = alerts_resp.json()["items"]
     assert len(items) > 0, "Alerts must be persisted for the DoS run"
+    assert body["ml_mode"] == "demo"
+    assert items[0]["details"].get("stage2_mode") == "demo"
 
 
 def test_run_normal_dataset_few_alerts(client):
@@ -154,12 +168,24 @@ def test_run_inline_frames(client):
         "/api/v1/detection/run",
         json={
             "frames": [
-                {"timestamp": 0.001, "can_id": "0x140", "dlc": 8,
-                 "payload": "0102030405060708"},
-                {"timestamp": 0.015, "can_id": "0x140", "dlc": 8,
-                 "payload": "0102030405060708"},
-                {"timestamp": 0.030, "can_id": "0x140", "dlc": 8,
-                 "payload": "0102030405060708"},
+                {
+                    "timestamp": 0.001,
+                    "can_id": "0x140",
+                    "dlc": 8,
+                    "payload": "0102030405060708",
+                },
+                {
+                    "timestamp": 0.015,
+                    "can_id": "0x140",
+                    "dlc": 8,
+                    "payload": "0102030405060708",
+                },
+                {
+                    "timestamp": 0.030,
+                    "can_id": "0x140",
+                    "dlc": 8,
+                    "payload": "0102030405060708",
+                },
             ]
         },
     )
@@ -193,7 +219,11 @@ def test_run_mismatched_payload_dlc_422(client):
     """Payload hex length not matching DLC returns 422."""
     resp = client.post(
         "/api/v1/detection/run",
-        json={"frames": [{"timestamp": 0.1, "can_id": 0x140, "dlc": 2, "payload": "01020304"}]},
+        json={
+            "frames": [
+                {"timestamp": 0.1, "can_id": 0x140, "dlc": 2, "payload": "01020304"}
+            ]
+        },
     )
     assert resp.status_code == 422
 

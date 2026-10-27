@@ -382,7 +382,7 @@ export function DetectionView({
                           : "All Frames Verified Normal"}
                       </h2>
                       <p className="text-xs text-slate-400">
-                        {activeResult.total_frames} frames evaluated across Stage 1 rules and Stage 2 ML
+                        {activeResult.total_frames} frames evaluated • Stage 2: {activeResult.ml_mode ?? "unknown"}
                       </p>
                     </div>
                   </div>
@@ -494,7 +494,7 @@ export function DetectionView({
                           <th className="py-2.5 px-3">Confidence</th>
                           <th className="py-2.5 px-3">Stage</th>
                           <th className="py-2.5 px-3">Rules</th>
-                          <th className="py-2.5 px-3">Reason</th>
+                            <th className="py-2.5 px-3">Evidence and explanation</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800/60">
@@ -531,8 +531,10 @@ export function DetectionView({
                             <td className="py-2.5 px-3 font-mono text-cyan-400 font-semibold">
                               {a.rule_ids || "—"}
                             </td>
-                            <td className="py-2.5 px-3 text-slate-300 max-w-xs truncate" title={a.reason}>
-                              {a.reason}
+                              <td className="py-2.5 px-3 text-slate-300 max-w-md">
+                                <div title={a.reason}>{a.reason}</div>
+                                {a.stage2_prediction && <div className="mt-1 text-[10px] text-amber-300">Stage 2 ({a.stage2_mode}): {a.stage2_prediction}{a.stage2_confidence != null ? ` · ${Math.round(a.stage2_confidence * 100)}%` : ""}</div>}
+                                {a.shap_values && <div className="mt-1 text-[10px] text-cyan-300">SHAP: {Object.entries(a.shap_values).sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).slice(0, 3).map(([name, value]) => `${name} ${value.toFixed(3)}`).join(" · ")}</div>}
                             </td>
                           </tr>
                         ))}

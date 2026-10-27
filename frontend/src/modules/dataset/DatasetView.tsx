@@ -91,7 +91,7 @@ export function DatasetView({
             <span>CAN-Bus Dataset Repository</span>
           </h1>
           <p className="mt-1 text-sm text-slate-400">
-            Pre-loaded vehicular benchmarks and uploaded traffic traces stored in <code>data/samples/</code>
+            Repository samples and uploaded traces. Dataset provenance is shown only when verified.
           </p>
         </div>
 
@@ -110,7 +110,7 @@ export function DatasetView({
         <div className="lg:col-span-2 space-y-4">
           <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm">
             <h2 className="text-base font-semibold text-white mb-4 flex items-center justify-between">
-              <span>Available Benchmarks & Captures</span>
+              <span>Available Samples & Captures</span>
               <span className="text-xs font-normal text-slate-400 font-mono">
                 {datasets.length} files located
               </span>
@@ -134,6 +134,7 @@ export function DatasetView({
                       <th className="py-3 px-4">Dataset Name</th>
                       <th className="py-3 px-4">File Name</th>
                       <th className="py-3 px-4">Total Rows</th>
+                      <th className="py-3 px-4">Provenance</th>
                       <th className="py-3 px-4">File Size</th>
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
@@ -153,6 +154,7 @@ export function DatasetView({
                         <td className="py-3.5 px-4 font-mono text-cyan-300 font-medium">
                           {ds.rows > 0 ? ds.rows.toLocaleString() : "Evaluating"}
                         </td>
+                        <td className="py-3.5 px-4 text-xs text-amber-300">{ds.source_kind ?? "provenance unverified"}</td>
                         <td className="py-3.5 px-4 font-mono text-xs text-slate-400">
                           {ds.size_formatted ?? "—"}
                         </td>
@@ -289,6 +291,13 @@ export function DatasetView({
                 </div>
               ) : datasetDetails ? (
                 <>
+                  <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 text-xs text-amber-200">
+                    Source: {datasetDetails.source_kind ?? "provenance unverified"}
+                  </div>
+                  {datasetDetails.label_distribution && <div>
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Label distribution</h4>
+                    <div className="flex flex-wrap gap-2">{Object.entries(datasetDetails.label_distribution).map(([label, count]) => <span key={label} className="rounded bg-slate-800 px-2.5 py-1 text-xs font-mono text-slate-200">{label}: {count.toLocaleString()}</span>)}</div>
+                  </div>}
                   {/* Columns */}
                   <div>
                     <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">

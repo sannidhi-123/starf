@@ -12,6 +12,7 @@ export interface DatasetItem {
   rows: number;
   size_bytes?: number;
   size_formatted?: string;
+  source_kind?: string;
 }
 
 export interface SampleFrame {
@@ -31,6 +32,8 @@ export interface DatasetDetails {
   size_formatted: string;
   columns: string[];
   sample_frames: SampleFrame[];
+  source_kind?: string;
+  label_distribution?: Record<string, number> | null;
 }
 
 export interface CANFrameInput {
@@ -62,6 +65,12 @@ export interface AlertItem {
   severity_score: number;
   rule_ids: string;
   reason: string;
+  rule_evidence?: string[];
+  stage2_prediction?: string | null;
+  stage2_confidence?: number | null;
+  stage2_mode?: string;
+  shap_values?: Record<string, number> | null;
+  details?: Record<string, unknown>;
 }
 
 export interface AlertSummary {
@@ -84,6 +93,8 @@ export interface DetectionResult {
   by_severity: Record<string, number>;
   rule_hits: Record<string, number>;
   execution_time_ms: number;
+  ml_mode?: string;
+  ml_failures?: number;
   summary: {
     total: number;
     by_label: Record<string, number>;

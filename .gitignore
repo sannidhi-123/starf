@@ -6,6 +6,8 @@ __pycache__/
 .mypy_cache/
 *.tsbuildinfo
 *.db
+models/*.pkl
+models/*.metrics.json
 *.sqlite
 node_modules/
 dist/

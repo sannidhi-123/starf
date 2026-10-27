@@ -44,6 +44,13 @@ async def init_db() -> None:
     async with engine.begin() as connection:
         await connection.execute(text("SELECT 1"))
         await connection.run_sync(Base.metadata.create_all)
+        # create_all does not add columns to an existing SQLite database.
+        if connection.dialect.name == "sqlite":
+            columns = await connection.exec_driver_sql("PRAGMA table_info(alerts)")
+            if "details" not in {row[1] for row in columns.fetchall()}:
+                await connection.exec_driver_sql(
+                    "ALTER TABLE alerts ADD COLUMN details JSON NOT NULL DEFAULT '{}'"
+                )
 
 
 async def close_db() -> None:

@@ -91,6 +91,7 @@ class CANFrameInput(BaseModel):
     timestamp: float = Field(
         ...,
         ge=0.0,
+        allow_inf_nan=False,
         description="Frame timestamp in seconds (non-negative float)",
     )
     can_id: int = Field(
@@ -112,17 +113,20 @@ class CANFrameInput(BaseModel):
     delta_t: Optional[float] = Field(
         default=None,
         ge=0.0,
+        allow_inf_nan=False,
         description="Inter-arrival time difference Δt = t_i - t_{i-1} in seconds",
     )
     frequency: Optional[float] = Field(
         default=None,
         ge=0.0,
+        allow_inf_nan=False,
         description="Message transmission frequency in Hz within a sliding time window",
     )
     byte_entropy: Optional[float] = Field(
         default=None,
         ge=0.0,
         le=8.0,
+        allow_inf_nan=False,
         description="Shannon entropy of the payload bytes (0.0 to 8.0)",
     )
 

@@ -42,7 +42,9 @@ def _resolve_column(df: pd.DataFrame, candidates: List[str]) -> Optional[str]:
 
 
 def _filter_normal(df: pd.DataFrame) -> pd.DataFrame:
-    flag_col = _resolve_column(df, ["flag", "label", "status", "attack", "is_attack", "class"])
+    flag_col = _resolve_column(
+        df, ["flag", "label", "status", "attack", "is_attack", "class"]
+    )
     if flag_col is None:
         return df.copy()
     unique = set(df[flag_col].dropna().unique())
@@ -205,6 +207,7 @@ class DetectionPipeline:
         by_severity: Dict[str, int] = {}
         rule_hits: Dict[str, int] = {}
         alert_list: List[Dict[str, Any]] = []
+        ml_failures = 0
 
         t0 = time.perf_counter()
 
@@ -223,18 +226,30 @@ class DetectionPipeline:
             sampled = False
             stage2_class = "normal"
             stage2_prob = 0.97
+            stage2_probs: Dict[str, float] = {}
+            stage2_error: Optional[str] = None
 
             verdict = rule_verdict.verdict
             if verdict in ("VIOLATION", "SUSPECT"):
                 # Always run Stage 2 for flagged frames
-                stage2_class, probs = self._stage2.predict(enriched)
-                stage2_prob = probs.get(stage2_class, 0.5)
-                sampled = True
+                try:
+                    stage2_class, stage2_probs = self._stage2.predict(enriched)
+                    stage2_prob = stage2_probs.get(stage2_class, 0.5)
+                    sampled = True
+                except Exception as exc:
+                    ml_failures += 1
+                    stage2_error = str(exc)
+                    stage2_class, stage2_prob = "normal", 1.0
             elif verdict == "CLEAN" and self._rng.random() < _SAMPLE_RATE:
                 # 10% random sampling for CLEAN frames
-                stage2_class, probs = self._stage2.predict(enriched)
-                stage2_prob = probs.get(stage2_class, 0.5)
-                sampled = True
+                try:
+                    stage2_class, stage2_probs = self._stage2.predict(enriched)
+                    stage2_prob = stage2_probs.get(stage2_class, 0.5)
+                    sampled = True
+                except Exception as exc:
+                    ml_failures += 1
+                    stage2_error = str(exc)
+                    stage2_class, stage2_prob = "normal", 1.0
 
             # ---- Fusion ----
             decision = decide(
@@ -258,6 +273,22 @@ class DetectionPipeline:
             if label.lower() == "normal":
                 normal_count += 1
             else:
+                rule_evidence = [hit.reason for hit in rule_verdict.hits]
+                reason_parts = rule_evidence + [decision.reason]
+                if sampled:
+                    reason_parts.append(
+                        f"Stage 2 {getattr(self._stage2, 'mode', 'unknown')} prediction: "
+                        f"{stage2_class} ({stage2_prob:.3f})"
+                    )
+                if stage2_error:
+                    reason_parts.append(
+                        f"Stage 2 inference unavailable: {stage2_error}"
+                    )
+                shap_values = (
+                    self._stage2.explain(enriched, stage2_class)
+                    if sampled and getattr(self._stage2, "mode", None) == "trained"
+                    else None
+                )
                 alert_count += 1
                 alert_list.append(
                     {
@@ -269,7 +300,12 @@ class DetectionPipeline:
                         "severity_level": sev_level,
                         "severity_score": sev_score,
                         "rule_ids": ",".join(decision.rule_ids),
-                        "reason": decision.reason,
+                        "reason": "; ".join(reason_parts),
+                        "rule_evidence": rule_evidence,
+                        "stage2_prediction": stage2_class if sampled else None,
+                        "stage2_confidence": round(stage2_prob, 4) if sampled else None,
+                        "stage2_mode": getattr(self._stage2, "mode", "unknown"),
+                        "shap_values": shap_values,
                     }
                 )
 
@@ -282,6 +318,8 @@ class DetectionPipeline:
             "by_label": by_label,
             "by_severity": by_severity,
             "rule_hits": rule_hits,
+            "ml_mode": getattr(self._stage2, "mode", "unknown"),
+            "ml_failures": ml_failures,
             "execution_time_ms": round(execution_time_ms, 2),
             "alerts": alert_list,
         }

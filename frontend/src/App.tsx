@@ -97,7 +97,7 @@ export default function App() {
           run_id: runIdFilter || undefined,
           limit: 200,
         }),
-        getAlertsSummary(runIdFilter || undefined),
+        getAlertsSummary(),
       ]);
       setAlerts(items);
       setAlertsSummary(summary);
@@ -169,6 +169,7 @@ export default function App() {
         healthLoading={healthLoading}
         onRefresh={refreshAll}
         alertsCount={alertsSummary?.total ?? alerts.length}
+        detectionMode={models.find((model) => model.id === "stage2_classifier")?.status_label ?? "unknown"}
       />
 
       {/* Main Content Area */}

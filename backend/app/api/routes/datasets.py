@@ -40,15 +40,20 @@ async def list_datasets() -> dict:
     """Return id, name, row-count, and file size for every CSV in data/samples/."""
     items = []
     samples_dir = get_samples_dir()
+    if not samples_dir.is_dir():
+        raise HTTPException(
+            status_code=500, detail=f"Dataset directory is unavailable: {samples_dir}"
+        )
     if samples_dir.exists():
         for p in sorted(samples_dir.glob("*.csv")):
             try:
                 size_bytes = p.stat().st_size
                 with open(p, "r", encoding="utf-8", errors="ignore") as f:
                     rows = max(0, sum(1 for _ in f) - 1)
-            except Exception:
-                rows = -1
-                size_bytes = 0
+            except Exception as exc:
+                raise HTTPException(
+                    status_code=500, detail=f"Failed to inspect dataset {p.name}: {exc}"
+                ) from exc
             items.append(
                 {
                     "id": p.stem,
@@ -57,6 +62,11 @@ async def list_datasets() -> dict:
                     "rows": rows,
                     "size_bytes": size_bytes,
                     "size_formatted": _format_size(size_bytes),
+                    "source_kind": (
+                        "synthetic fixture"
+                        if p.stem == "fixture"
+                        else "repository sample; provenance unverified"
+                    ),
                 }
             )
     return {"items": items}
@@ -66,19 +76,41 @@ async def list_datasets() -> dict:
 async def get_dataset_details(dataset_id: str) -> dict:
     """Return detailed metadata, column list, and preview sample frames for a dataset."""
     if ".." in dataset_id or "/" in dataset_id or "\\" in dataset_id:
-        raise HTTPException(status_code=422, detail="Invalid dataset_id: path traversal forbidden.")
+        raise HTTPException(
+            status_code=422, detail="Invalid dataset_id: path traversal forbidden."
+        )
 
     samples_dir = get_samples_dir()
     target = samples_dir / f"{dataset_id}.csv"
     if not target.exists():
         target = samples_dir / dataset_id
         if not target.exists():
-            raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found.")
+            raise HTTPException(
+                status_code=404, detail=f"Dataset '{dataset_id}' not found."
+            )
 
     try:
         df_preview = pd.read_csv(target, nrows=15, dtype=str)
         columns = list(df_preview.columns)
         size_bytes = target.stat().st_size
+        all_columns = pd.read_csv(target, nrows=0).columns
+        label_col = next(
+            (
+                col
+                for col in all_columns
+                if str(col).strip().lower()
+                in ("flag", "label", "class", "status", "attack_type")
+            ),
+            None,
+        )
+        label_distribution = None
+        if label_col is not None:
+            label_distribution = (
+                pd.read_csv(target, usecols=[label_col], dtype=str)[label_col]
+                .fillna("unknown")
+                .value_counts()
+                .to_dict()
+            )
 
         with open(target, "r", encoding="utf-8", errors="ignore") as f:
             total_rows = max(0, sum(1 for _ in f) - 1)
@@ -86,7 +118,9 @@ async def get_dataset_details(dataset_id: str) -> dict:
         sample_frames: List[Dict[str, Any]] = []
         for _, row in df_preview.iterrows():
             raw_id = row.get("CAN ID") or row.get("can_id") or row.get("id") or "0x000"
-            raw_ts = row.get("Timestamp") or row.get("timestamp") or row.get("ts") or "0.0"
+            raw_ts = (
+                row.get("Timestamp") or row.get("timestamp") or row.get("ts") or "0.0"
+            )
             raw_dlc = row.get("DLC") or row.get("dlc") or "8"
 
             data_cols = [f"DATA[{i}]" for i in range(8)]
@@ -104,7 +138,9 @@ async def get_dataset_details(dataset_id: str) -> dict:
                     "can_id": str(raw_id),
                     "dlc": str(raw_dlc),
                     "payload": payload,
-                    "raw_row": {k: str(v) if pd.notna(v) else "" for k, v in row.items()},
+                    "raw_row": {
+                        k: str(v) if pd.notna(v) else "" for k, v in row.items()
+                    },
                 }
             )
 
@@ -117,6 +153,12 @@ async def get_dataset_details(dataset_id: str) -> dict:
             "size_formatted": _format_size(size_bytes),
             "columns": columns,
             "sample_frames": sample_frames,
+            "source_kind": (
+                "synthetic fixture"
+                if target.stem == "fixture"
+                else "repository sample; provenance unverified"
+            ),
+            "label_distribution": label_distribution,
         }
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to read dataset: {exc}")
@@ -129,7 +171,9 @@ async def upload_dataset(payload: DatasetUploadPayload) -> dict:
     if not filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only .csv files are supported.")
 
-    safe_name = "".join(c for c in filename if c.isalnum() or c in ("-", "_", ".")).strip()
+    safe_name = "".join(
+        c for c in filename if c.isalnum() or c in ("-", "_", ".")
+    ).strip()
     if not safe_name.lower().endswith(".csv"):
         safe_name = f"{safe_name}.csv"
 
@@ -155,5 +199,6 @@ async def upload_dataset(payload: DatasetUploadPayload) -> dict:
         "rows": rows,
         "size_bytes": size_bytes,
         "size_formatted": _format_size(size_bytes),
+        "source_kind": "uploaded by user; provenance unverified",
         "message": f"Successfully uploaded {destination.name} ({rows} rows)",
     }

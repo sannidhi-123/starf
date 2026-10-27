@@ -52,7 +52,6 @@ _db_module.SessionLocal = _TMP_SF
 from app.main import app  # noqa: E402
 from app.modules.alerts.service import AlertService  # noqa: E402
 
-
 # ---------------------------------------------------------------------------
 # Pytest fixtures
 # ---------------------------------------------------------------------------
@@ -97,6 +96,10 @@ async def seeded_service(setup_db):
             "severity_score": 11,
             "rule_ids": "R1,R3",
             "reason": "Dual confirmation DoS",
+            "rule_evidence": ["unknown CAN ID 0x100"],
+            "stage2_prediction": "dos",
+            "stage2_confidence": 0.93,
+            "stage2_mode": "demo",
         },
         {
             "timestamp": 2.0,
@@ -168,6 +171,8 @@ async def test_alert_out_can_id_hex(seeded_service):
     alert = items[0]
     assert alert.can_id == 0x100
     assert alert.can_id_hex == "0x0100"
+    assert alert.details["stage2_prediction"] == "dos"
+    assert alert.details["stage2_mode"] == "demo"
 
 
 @pytest.mark.asyncio

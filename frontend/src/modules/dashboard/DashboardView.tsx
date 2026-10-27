@@ -48,7 +48,6 @@ export function DashboardView({
   datasets,
   datasetsLoading,
   models,
-  modelsLoading,
   alerts,
   alertsSummary,
   alertsLoading,
@@ -62,6 +61,10 @@ export function DashboardView({
   const highCount = alertsSummary?.by_severity?.HIGH ?? 0;
   const mediumCount = alertsSummary?.by_severity?.MEDIUM ?? 0;
   const lowCount = alertsSummary?.by_severity?.LOW ?? 0;
+  const processedFrames = recentRuns.reduce((sum, run) => sum + run.total_frames, 0);
+  const normalFrames = recentRuns.reduce((sum, run) => sum + run.normal_count, 0);
+  const flaggedFrames = recentRuns.reduce((sum, run) => sum + run.alert_count, 0);
+  const stage2 = models.find((model) => model.id === "stage2_classifier");
 
   return (
     <div className="space-y-8">
@@ -77,8 +80,7 @@ export function DashboardView({
               Intra-Vehicular CAN-Bus Anomaly Recognition
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-slate-300 leading-relaxed">
-              STARF combines Stage 1 sub-millisecond deterministic protocol rules (R1–R7) with Stage 2
-              statistical multi-class classification and dynamic 7-row hybrid arbitration.
+              STARF evaluates CAN traffic with configurable protocol rules, an explicitly reported Stage 2 runtime mode, and hybrid severity decisions.
             </p>
           </div>
 
@@ -107,30 +109,28 @@ export function DashboardView({
       {/* KPI Stat Cards (Real Live Data) */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card
-          label="Managed Datasets"
-          value={datasetsLoading ? "..." : datasets.length}
+          label="Frames Processed"
+          value={processedFrames.toLocaleString()}
           icon={<Database size={20} />}
-          subtitle={`${datasets.reduce((acc, d) => acc + (d.rows > 0 ? d.rows : 0), 0).toLocaleString()} total CAN frames`}
-          badge={datasets.length > 0 ? "LIVE" : "EMPTY"}
+          subtitle={recentRuns.length ? `Across ${recentRuns.length} recent run${recentRuns.length === 1 ? "" : "s"}` : "No detection runs yet"}
+          badge={recentRuns.length ? "RECENT" : "READY"}
           badgeColor="cyan"
-          loading={datasetsLoading}
         />
         <Card
-          label="Detection Runs"
-          value={recentRuns.length > 0 ? recentRuns.length : "Ready"}
+          label="Normal Frames"
+          value={normalFrames.toLocaleString()}
           icon={<Radar size={20} />}
-          subtitle={recentRuns.length > 0 ? `Latest: ${recentRuns[0].total_frames} frames` : "Execute from console"}
-          badge="PIPELINE"
+          subtitle="Final pipeline decisions labeled normal"
+          badge={recentRuns.length ? "MEASURED" : "NO DATA"}
           badgeColor="emerald"
         />
         <Card
-          label="Pipeline Stages"
-          value={modelsLoading ? "..." : `${models.length} Active`}
+          label="Flagged Frames"
+          value={flaggedFrames.toLocaleString()}
           icon={<Activity size={20} />}
-          subtitle="Stage 1 Rules + Stage 2 ML + Stage 3 Fusion"
-          badge="STUB-DEMO"
+          subtitle={recentRuns.length ? "Alerts produced by recent detection runs" : "No detection results yet"}
+          badge={stage2?.status_label ?? "UNKNOWN"}
           badgeColor="amber"
-          loading={modelsLoading}
         />
         <Card
           label="Persisted Alerts"
@@ -309,7 +309,7 @@ export function DashboardView({
               </h2>
             </div>
             <p className="mt-3 text-xs text-slate-400">
-              Trigger detection runs directly against managed CAN-bus attack benchmarks:
+              Run detection against repository CAN samples. Their source is identified in Dataset Explorer:
             </p>
 
             <div className="mt-4 space-y-2">

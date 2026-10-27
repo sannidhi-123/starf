@@ -44,6 +44,15 @@ npm run dev
 Set `INTEGRATION_MODE=real` only after implementing and configuring the real service
 adapters. The default `mock` mode keeps the API runnable end-to-end.
 
+### Optional Stage 2 model
+
+Install `backend/requirements-ml.txt`, then train from a labeled CAN CSV with
+`python scripts/train_model.py --data path/to/training.csv --model random_forest`.
+Set `STARF_ML_MODE=trained` and `STARF_MODEL_PATH=models/starf_model.pkl` to load
+the resulting local artifact. `STARF_ML_MODE=demo` uses the clearly labeled
+deterministic demo classifier; `STARF_ML_MODE=rules_only` disables Stage 2.
+The repository sample files are not verified Car Hacking or OTIDS benchmarks.
+
 ## Repository layout
 
 ```text

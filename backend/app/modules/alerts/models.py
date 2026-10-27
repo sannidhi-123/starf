@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, Index, Integer, String, func
+from sqlalchemy import DateTime, Float, Index, Integer, JSON, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -47,7 +47,6 @@ class Alert(Base):
     severity_score: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     rule_ids: Mapped[str] = mapped_column(String, nullable=False, default="")
     reason: Mapped[str] = mapped_column(String, nullable=False, default="")
+    details: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
 
-    __table_args__ = (
-        Index("ix_alerts_run_id_severity", "run_id", "severity_level"),
-    )
+    __table_args__ = (Index("ix_alerts_run_id_severity", "run_id", "severity_level"),)

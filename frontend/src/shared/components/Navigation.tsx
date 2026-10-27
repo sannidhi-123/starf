@@ -22,6 +22,7 @@ interface NavigationProps {
   healthLoading: boolean;
   onRefresh: () => void;
   alertsCount?: number;
+  detectionMode?: string;
 }
 
 export function Navigation({
@@ -31,6 +32,7 @@ export function Navigation({
   healthLoading,
   onRefresh,
   alertsCount = 0,
+  detectionMode = "unknown",
 }: NavigationProps) {
   interface TabItem {
     id: NavTab;
@@ -103,6 +105,7 @@ export function Navigation({
 
         {/* System Status & Refresh */}
         <div className="flex items-center gap-2">
+          <span className="hidden xl:inline rounded border border-slate-800 bg-slate-900 px-2.5 py-1 text-[10px] font-mono text-slate-300">Stage 2: {detectionMode}</span>
           <div
             className={`flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
               isOnline

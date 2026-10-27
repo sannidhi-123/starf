@@ -25,6 +25,7 @@ interface MLViewProps {
 }
 
 export function MLView({ models, loading, onRefresh }: MLViewProps) {
+  const stage2 = models.find((model) => model.id === "stage2_classifier");
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -35,8 +36,7 @@ export function MLView({ models, loading, onRefresh }: MLViewProps) {
             <span>Hybrid Detection Architecture & Pipeline Models</span>
           </h1>
           <p className="mt-1 text-sm text-slate-400">
-            3-Stage pipeline combining sub-millisecond physical rules, statistical ML classification, and
-            7-row arbitration
+            Runtime model status, active rule checks, and decision fusion details
           </p>
         </div>
 
@@ -51,21 +51,17 @@ export function MLView({ models, loading, onRefresh }: MLViewProps) {
       </div>
 
       {/* Honest Status Callout */}
-      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 backdrop-blur-sm flex items-start gap-3">
-        <Info size={20} className="text-amber-400 shrink-0 mt-0.5" />
+      <div className={`rounded-xl border p-5 flex items-start gap-3 ${stage2?.status === "active" ? "border-emerald-500/30 bg-emerald-500/10" : "border-amber-500/30 bg-amber-500/10"}`}>
+        <Info size={20} className={`${stage2?.status === "active" ? "text-emerald-400" : "text-amber-400"} shrink-0 mt-0.5`} />
         <div className="text-xs text-slate-300 space-y-1">
-          <p className="font-semibold text-amber-300">
-            Phase-II Pipeline Status & Architecture Integrity Notice:
+          <p className="font-semibold text-white">
+            Stage 2 runtime: {stage2?.status_label ?? "status unavailable"}
           </p>
           <p>
-            <strong>Stage 1 (Deterministic Rules)</strong> and <strong>Stage 3 (Hybrid Fusion)</strong> are fully active,
-            tuned, and running in production with 1.31% validation FPR and sub-millisecond evaluation.
+            {stage2?.description ?? "Connect the backend to read the active model runtime state."}
           </p>
-          <p>
-            <strong>Stage 2 (LightGBM Multi-Class Classifier)</strong> currently runs the Day 15 deterministic demo stub
-            with exact feature contracts (<code>normal</code>, <code>dos</code>, <code>fuzzy</code>, <code>spoofing</code>).
-            The final trained binary model weights from Person 3 are scheduled for zero-refactor swap on Day 16.
-          </p>
+          {stage2?.metrics?.load_error && <p className="text-rose-300">Model load error: {stage2.metrics.load_error}</p>}
+          <p>Stage 1 metrics in the repository report have no attack examples in validation, so they do not establish attack recall.</p>
         </div>
       </div>
 
@@ -81,7 +77,7 @@ export function MLView({ models, loading, onRefresh }: MLViewProps) {
             <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">Step 1</span>
             <h3 className="text-xs font-bold text-cyan-400 mt-1">Causal Streaming Features</h3>
             <p className="text-[11px] text-slate-400 mt-1">
-              Zero look-ahead. Extracts Δt, 50ms sliding rate, Hamming distance & entropy.
+              Causal streaming features include Δt, 50ms bus rate, per-ID frame count, payload repetition, and Hamming distance.
             </p>
           </div>
 
@@ -89,7 +85,7 @@ export function MLView({ models, loading, onRefresh }: MLViewProps) {
             <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">Step 2</span>
             <h3 className="text-xs font-bold text-cyan-400 mt-1">Stage 1 Deterministic Rules</h3>
             <p className="text-[11px] text-slate-400 mt-1">
-              Evaluates R1–R7 physical thresholds. Filters 98.7% normal traffic in &lt;0.02ms.
+              Evaluates configured R1–R7 deterministic checks. Threshold performance depends on representative validation data.
             </p>
           </div>
 

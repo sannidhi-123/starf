@@ -16,7 +16,6 @@ from stark.ml.predict import Stage2Model, predict
 from stark.rules.definitions import RuleHit
 from stark.rules.engine import RuleVerdict
 
-
 # ============================================================================
 # Stage2Model Stub Tests
 # ============================================================================
@@ -52,6 +51,7 @@ def test_stage2_model_deterministic_normal():
 
 def test_stage2_model_object_input():
     """Stage2Model accepts attribute-based object representation."""
+
     class MockFrame:
         can_id = 0
         dt_same_id = 0.01
@@ -102,7 +102,12 @@ def test_row_1_violation_and_attack():
 
 def test_row_2_violation_and_normal():
     """Row 2: VIOLATION and class == normal -> label 'ATTACK (unclassified)', conf 0.70, stage 'stage1'."""
-    hit = RuleHit(rule_id="R1", reason="Unauthorized arbitration ID", weight=3, verdict="VIOLATION")
+    hit = RuleHit(
+        rule_id="R1",
+        reason="Unauthorized arbitration ID",
+        weight=3,
+        verdict="VIOLATION",
+    )
     rv = RuleVerdict(verdict="VIOLATION", score=3, hits=[hit])
 
     # Explicit requirement: R1 VIOLATION + normal 0.97
@@ -308,7 +313,9 @@ def test_severity_critical():
         severity_cap=None,
         rule_ids=["R1"],
     )
-    rv = RuleVerdict(verdict="VIOLATION", score=3, hits=[RuleHit("R1", "Unknown ID", 3)])
+    rv = RuleVerdict(
+        verdict="VIOLATION", score=3, hits=[RuleHit("R1", "Unknown ID", 3)]
+    )
 
     score_val, level = score(decision, rv, can_id=0x100)
     assert score_val == 11

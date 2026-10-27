@@ -59,6 +59,17 @@ class AlertService:
                     severity_score=int(raw.get("severity_score", 0)),
                     rule_ids=str(raw.get("rule_ids", "")),
                     reason=str(raw.get("reason", "")),
+                    details={
+                        key: raw.get(key)
+                        for key in (
+                            "rule_evidence",
+                            "stage2_prediction",
+                            "stage2_confidence",
+                            "stage2_mode",
+                            "shap_values",
+                        )
+                        if raw.get(key) is not None
+                    },
                 )
             )
 
@@ -109,7 +120,9 @@ class AlertService:
             total: int = (await session.execute(total_stmt)).scalar_one()
 
             # Count by label
-            label_stmt = select(Alert.label, func.count().label("cnt")).group_by(Alert.label)
+            label_stmt = select(Alert.label, func.count().label("cnt")).group_by(
+                Alert.label
+            )
             if run_id is not None:
                 label_stmt = label_stmt.where(Alert.run_id == run_id)
             label_rows = (await session.execute(label_stmt)).all()

@@ -327,7 +327,9 @@ def test_r7_time_based_watchdog_monitoring():
     # 0x140 elapsed is 50ms > 40ms timeout -> FIRES R7!
     # 0x260 elapsed is 50ms < 80ms timeout -> quiet
     # 0x999 is aperiodic -> quiet
-    hits_timeout = check_silence_timeouts(last_seen, current_timestamp=1.050, bp=bp, cfg=cfg)
+    hits_timeout = check_silence_timeouts(
+        last_seen, current_timestamp=1.050, bp=bp, cfg=cfg
+    )
     assert len(hits_timeout) == 1
     assert hits_timeout[0].rule_id == "R7"
     assert hits_timeout[0].weight == 1

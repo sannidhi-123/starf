@@ -665,7 +665,9 @@ def check_silence_timeouts(
             x_ms = elapsed * 1000.0
             t_ms = timeout * 1000.0
             reason = f"watchdog timeout for 0x{can_id:03X}: elapsed {x_ms:.1f}ms exceeds {t_ms:.1f}ms"
-            hits.append(RuleHit(rule_id="R7", reason=reason, weight=1, verdict="SUSPECT"))
+            hits.append(
+                RuleHit(rule_id="R7", reason=reason, weight=1, verdict="SUSPECT")
+            )
 
     return hits
 
