@@ -141,3 +141,28 @@ Fast deterministic filtering checking against automotive safety rules:
 | 4. Neural Network Detection | [`backend/app/modules/ml`](file:///Users/sannidhichouthayi/starf/backend/app/modules/ml) (`MlService`) |
 | 5. Alert Generation | [`backend/app/modules/alerts`](file:///Users/sannidhichouthayi/starf/backend/app/modules/alerts) (`AlertsService`) |
 | 6. Telemetry & Dashboard | [`frontend/src`](file:///Users/sannidhichouthayi/starf/frontend/src) |
+
+
+---
+
+## ML Module API (Stage 2 model workflow)
+
+Code: `backend/app/modules/ml/`, `backend/app/api/routes/ml.py`, `frontend/src/modules/ml/`.
+
+Lifecycle: `registered → training → trained | failed`. Training runs as a background task; poll `/status`.
+
+| Method & path (`/api/v1/ml`) | Purpose |
+|---|---|
+| `GET /models` | List models (local registry + integration-provided models) |
+| `POST /models` | Register a model `{name, architecture?, description?, hyperparameters?}` → 201 |
+| `GET /models/{id}` / `DELETE /models/{id}` | Fetch / delete (409 while training) |
+| `POST /models/{id}/train` | Start training with `{dataset_id}` or inline labeled `{samples}` → 202 |
+| `GET /models/{id}/status` | Status, error, `trained_at` |
+| `GET /models/{id}/metrics` | Accuracy, precision, recall, F1, ROC-AUC, confusion matrix (409 until trained) |
+| `POST /models/{id}/predict` | Score CAN frames → per-frame anomaly score and verdict (409 until trained) |
+
+- **Trainers:** `baseline-logreg` (numpy). Add GRU/1D-CNN/LSTM by implementing `Trainer` in `trainer.py` and registering it in `TRAINERS`.
+- **Features:** `delta_t`, DLC, byte entropy, frequency, payload mean/max (`features.py`). Missing `delta_t`/frequency are derived per CAN ID from frame order.
+- **Datasets:** `dataset_id` is resolved by a `DatasetProvider`. Until the dataset module exposes a loader, a deterministic synthetic provider is used (`data_source` shows `synthetic:<id>`); pass another provider to `MLService` to switch.
+- **Detection/alerts integration:** call `MLService.predict(model_id, frames)`.
+- **Storage:** one JSON file per model in `ML_MODEL_DIR` (default `data/models`).

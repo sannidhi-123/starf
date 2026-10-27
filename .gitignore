@@ -11,6 +11,7 @@ node_modules/
 dist/
 .DS_Store
 data/*
+backend/data/
 !data/.gitkeep
 coverage.xml
 .coverage

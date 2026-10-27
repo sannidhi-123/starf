@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Activity, Database, Download, FileUp, Radar, Search, HardDrive, Trash2 } from "lucide-react";
 import { Card } from "./shared/components/Card";
+ feature/ml
+import { ModelsPanel } from "./modules/ml";
+
 import { datasetDownloadUrl, deleteDataset, listDatasets, uploadDataset, type Dataset } from "./modules/dataset";
+main
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -158,6 +162,7 @@ export default function App() {
             <p className="mt-4 text-xs leading-5 text-slate-500">Uploads are checked for valid structure, stored locally, and indexed with row count, columns, size, and SHA-256 metadata.</p>
           </aside>
         </section>
+        <ModelsPanel />
       </div>
     </main>
   );
