@@ -1,1 +1,1 @@
-"""Dataset ingestion and catalog module."""
+"""Dataset ingestion, metadata, and preprocessing."""
