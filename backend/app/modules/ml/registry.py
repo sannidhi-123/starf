@@ -15,7 +15,9 @@ class ModelNotFoundError(KeyError):
 
 class ModelRegistry:
     def __init__(self, directory: str | Path | None = None) -> None:
-        self.directory = Path(directory or os.environ.get("ML_MODEL_DIR", "data/models"))
+        self.directory = Path(
+            directory or os.environ.get("ML_MODEL_DIR", "data/models")
+        )
         self._lock = threading.RLock()
 
     @property
@@ -40,13 +42,18 @@ class ModelRegistry:
             path = self._path(model_id)
             if not path.exists():
                 raise ModelNotFoundError(model_id)
-            return ModelRecord.model_validate(json.loads(path.read_text(encoding="utf-8")))
+            return ModelRecord.model_validate(
+                json.loads(path.read_text(encoding="utf-8"))
+            )
 
     def list(self) -> List[ModelRecord]:
         with self._lock:
             if not self.directory.exists():
                 return []
-            records = [ModelRecord.model_validate_json(p.read_text(encoding="utf-8")) for p in self.directory.glob("*.json")]
+            records = [
+                ModelRecord.model_validate_json(p.read_text(encoding="utf-8"))
+                for p in self.directory.glob("*.json")
+            ]
         return sorted(records, key=lambda r: r.created_at)
 
     def delete(self, model_id: str) -> None:

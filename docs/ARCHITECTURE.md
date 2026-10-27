@@ -50,7 +50,7 @@ flowchart TD
         Norm1 --> Dash["Monitoring & Visualization Dashboard"]
         Norm2 --> Dash
         Alert --> Dash
-        
+
         Dash --> D1["Real-time Traffic Visualization"]
         Dash --> D2["Normal vs Anomalous Messages"]
         Dash --> D3["Attack Statistics"]
@@ -61,7 +61,7 @@ flowchart TD
     classDef decision fill:#fed7aa,stroke:#f97316,stroke-width:2px;
     classDef alertBox fill:#fecaca,stroke:#ef4444,stroke-width:2px;
     classDef normalBox fill:#bbf7d0,stroke:#22c55e,stroke-width:2px;
-    
+
     class Dec1,Dec2 decision;
     class Alert,Classify alertBox;
     class Norm1,Norm2 normalBox;

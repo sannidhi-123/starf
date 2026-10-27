@@ -14,7 +14,14 @@ import numpy as np
 
 from app.modules.detection.schemas import CANFrameInput
 
-FEATURE_NAMES = ["delta_t_log", "dlc", "byte_entropy", "frequency_log", "payload_mean", "payload_max"]
+FEATURE_NAMES = [
+    "delta_t_log",
+    "dlc",
+    "byte_entropy",
+    "frequency_log",
+    "payload_mean",
+    "payload_max",
+]
 
 
 def payload_entropy(payload_bytes: Sequence[int]) -> float:
@@ -36,7 +43,11 @@ def frames_to_matrix(frames: Sequence[CANFrameInput]) -> np.ndarray:
         frequency = f.frequency
         if frequency is None and delta_t:
             frequency = 1.0 / delta_t
-        entropy = f.byte_entropy if f.byte_entropy is not None else payload_entropy(f.payload_bytes)
+        entropy = (
+            f.byte_entropy
+            if f.byte_entropy is not None
+            else payload_entropy(f.payload_bytes)
+        )
         data = f.payload_bytes
         rows.append(
             [

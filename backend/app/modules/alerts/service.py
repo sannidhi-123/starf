@@ -1,3 +1,11 @@
+"""AlertService: Alert and notification management for STARF.
+
+Provides:
+- SQLite persistence for hybrid pipeline detection alerts (add_many, list_alerts, summary, clear, delete_one).
+- Domain lifecycle tracking (create_alert, get_alert, acknowledge_alert, resolve_alert, get_stats).
+- Safe notification dispatch adapter.
+"""
+
 from __future__ import annotations
 
 import json
@@ -6,12 +14,27 @@ from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from threading import Lock
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, Field, field_validator, model_validator
+from sqlalchemy import delete, func, select
+
+from app.core import database as _db
+from app.modules.alerts.models import Alert
+from app.modules.alerts.schemas import AlertOut, AlertSummary
 
 logger = logging.getLogger("starf.alerts")
+
+
+class _SessionFactoryProxy:
+    """Proxy that dynamically resolves the active session factory from app.core.database."""
+
+    def __call__(self, *args: Any, **kwargs: Any):
+        return _db.SessionLocal(*args, **kwargs)
+
+
+SessionLocal = _SessionFactoryProxy()
 
 
 # ============================================================================
@@ -135,7 +158,9 @@ class AlertCreate(BaseModel):
             if v_clean.isdigit():
                 iv = int(v_clean)
                 return f"0x{iv:03X}" if iv <= 0x7FF else f"0x{iv:08X}"
-            return v_clean.upper() if v_clean.startswith("0x") else f"0x{v_clean.upper()}"
+            return (
+                v_clean.upper() if v_clean.startswith("0x") else f"0x{v_clean.upper()}"
+            )
         return str(v)
 
 
@@ -143,20 +168,34 @@ class AlertRecord(BaseModel):
     """Full domain model and response representation of a stored security alert."""
 
     id: str = Field(description="Unique UUIDv4 alert identifier")
-    can_id: Optional[str] = Field(default=None, description="Affected CAN arbitration ID")
+    can_id: Optional[str] = Field(
+        default=None, description="Affected CAN arbitration ID"
+    )
     timestamp: float = Field(description="Frame or event timestamp")
     message: str = Field(description="Short alert summary")
     description: str = Field(description="Detailed incident narrative")
     severity: AlertSeverity = Field(description="Severity rating")
-    status: AlertStatus = Field(default=AlertStatus.ACTIVE, description="Lifecycle status")
-    attack_category: AttackCategory = Field(default=AttackCategory.UNKNOWN, description="Attack classification")
+    status: AlertStatus = Field(
+        default=AlertStatus.ACTIVE, description="Lifecycle status"
+    )
+    attack_category: AttackCategory = Field(
+        default=AttackCategory.UNKNOWN, description="Attack classification"
+    )
     confidence: Optional[float] = Field(default=None, description="Confidence score")
     source: Optional[str] = Field(default=None, description="Originating component")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional context")
-    evidence: Dict[str, Any] = Field(default_factory=dict, description="Supporting telemetry")
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict, description="Additional context"
+    )
+    evidence: Dict[str, Any] = Field(
+        default_factory=dict, description="Supporting telemetry"
+    )
     created_at: datetime = Field(description="System alert creation timestamp")
-    acknowledged_at: Optional[datetime] = Field(default=None, description="Timestamp when operator acknowledged")
-    resolved_at: Optional[datetime] = Field(default=None, description="Timestamp when incident was resolved")
+    acknowledged_at: Optional[datetime] = Field(
+        default=None, description="Timestamp when operator acknowledged"
+    )
+    resolved_at: Optional[datetime] = Field(
+        default=None, description="Timestamp when incident was resolved"
+    )
 
 
 class AlertStats(BaseModel):
@@ -176,11 +215,7 @@ class AlertStats(BaseModel):
 
 
 class NotificationDispatcher:
-    """Safe local notification adapter for development and incident logging.
-
-    Prevents accidental external network communication, exposing credentials,
-    or unbounded I/O while producing structured security notification logs.
-    """
+    """Safe local notification adapter for development and incident logging."""
 
     def dispatch(self, alert: AlertRecord) -> None:
         level = logging.INFO
@@ -207,7 +242,7 @@ class NotificationDispatcher:
 
 
 class AlertService:
-    """Core domain service for managing the CAN-Bus Alert and Notification lifecycle."""
+    """Application service for persisting and querying Alert records."""
 
     def __init__(
         self,
@@ -218,7 +253,6 @@ class AlertService:
         self._alerts: Dict[str, AlertRecord] = {}
         self._dispatcher = notification_dispatcher or NotificationDispatcher()
 
-        # Isolated local file-backed persistence (mirroring ML module storage in data/models)
         self._storage_path: Optional[Path] = None
         if storage_dir is not None:
             self._storage_path = storage_dir / "alerts.json"
@@ -228,7 +262,10 @@ class AlertService:
                 base_data.mkdir(parents=True, exist_ok=True)
                 self._storage_path = base_data / "alerts.json"
             except Exception as exc:
-                logger.debug("Local data/alerts directory unavailable (%s); using in-memory storage.", exc)
+                logger.debug(
+                    "Local data/alerts directory unavailable (%s); using in-memory storage.",
+                    exc,
+                )
 
         self._load_from_storage()
 
@@ -242,26 +279,77 @@ class AlertService:
                     record = AlertRecord.model_validate(item)
                     self._alerts[record.id] = record
         except Exception as exc:
-            logger.warning("Could not load persisted alerts from %s: %s", self._storage_path, exc)
+            logger.warning(
+                "Could not load persisted alerts from %s: %s", self._storage_path, exc
+            )
 
     def _save_to_storage(self) -> None:
         if not self._storage_path:
             return
         try:
             with open(self._storage_path, "w", encoding="utf-8") as f:
-                data = [record.model_dump(mode="json") for record in self._alerts.values()]
+                data = [
+                    record.model_dump(mode="json") for record in self._alerts.values()
+                ]
                 json.dump(data, f, indent=2, default=str)
         except Exception as exc:
-            logger.warning("Could not persist alerts to %s: %s", self._storage_path, exc)
+            logger.warning(
+                "Could not persist alerts to %s: %s", self._storage_path, exc
+            )
+
+    # ------------------------------------------------------------------
+    # Write helpers (detection pipeline & direct creation)
+    # ------------------------------------------------------------------
+
+    async def add_many(self, run_id: str, alerts: list[dict[str, Any]]) -> int:
+        """Bulk-insert alert dicts for *run_id* into the database and return count."""
+        if not alerts:
+            return 0
+
+        now = datetime.now(timezone.utc)
+        rows: list[Alert] = []
+        for raw in alerts:
+            rows.append(
+                Alert(
+                    run_id=run_id,
+                    created_at=now,
+                    timestamp=float(raw.get("timestamp", 0.0)),
+                    can_id=int(raw.get("can_id", 0)),
+                    label=str(raw.get("label", "normal")),
+                    confidence=float(raw.get("confidence", 0.0)),
+                    stage=str(raw.get("stage", "stage1")),
+                    severity_level=str(raw.get("severity_level", "NONE")),
+                    severity_score=int(raw.get("severity_score", 0)),
+                    rule_ids=str(raw.get("rule_ids", "")),
+                    reason=str(raw.get("reason", "")),
+                    details={
+                        key: raw.get(key)
+                        for key in (
+                            "rule_evidence",
+                            "stage2_prediction",
+                            "stage2_confidence",
+                            "stage2_mode",
+                            "shap_values",
+                        )
+                        if raw.get(key) is not None
+                    },
+                )
+            )
+
+        async with SessionLocal() as session:
+            session.add_all(rows)
+            await session.commit()
+
+        return len(rows)
 
     def create_alert(self, payload: AlertCreate) -> AlertRecord:
         """Create a validated security alert from anomaly detection telemetry."""
         with self._lock:
             now = datetime.now(timezone.utc)
-            timestamp = payload.timestamp if payload.timestamp is not None else now.timestamp()
+            timestamp = (
+                payload.timestamp if payload.timestamp is not None else now.timestamp()
+            )
 
-            # Duplicate prevention (Requirement 6.A):
-            # Check for recent identical alert (same CAN ID, attack category, description) within 5 seconds
             for existing in self._alerts.values():
                 if (
                     existing.status == AlertStatus.ACTIVE
@@ -270,7 +358,6 @@ class AlertService:
                     and existing.description == payload.description
                     and abs(existing.timestamp - timestamp) < 5.0
                 ):
-                    # Duplicate detected within debounce window - update evidence and return existing
                     if payload.evidence:
                         existing.evidence.update(payload.evidence)
                         self._save_to_storage()
@@ -282,7 +369,8 @@ class AlertService:
                 can_id=payload.can_id,
                 timestamp=timestamp,
                 message=payload.message or "Anomaly detected",
-                description=payload.description or "Automotive CAN anomaly flagged by detection pipeline",
+                description=payload.description
+                or "Automotive CAN anomaly flagged by detection pipeline",
                 severity=payload.severity,
                 status=AlertStatus.ACTIVE,
                 attack_category=payload.attack_category,
@@ -296,42 +384,48 @@ class AlertService:
             self._alerts[alert_id] = record
             self._save_to_storage()
 
-        # Dispatch local notification
         self._dispatcher.dispatch(record)
         return record
 
-    def list_alerts(
+    # ------------------------------------------------------------------
+    # Read helpers
+    # ------------------------------------------------------------------
+
+    async def list_alerts(
         self,
+        run_id: Optional[str] = None,
         severity: Optional[str] = None,
         status: Optional[str] = None,
         attack_category: Optional[str] = None,
         can_id: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> List[AlertRecord]:
-        """List alerts with optional filtering and pagination."""
-        with self._lock:
-            results = list(self._alerts.values())
+    ) -> list[AlertOut]:
+        """Return alerts from DB, optionally filtered by run_id, severity, and can_id."""
+        stmt = select(Alert).order_by(Alert.id.desc())
+        if run_id is not None:
+            stmt = stmt.where(Alert.run_id == run_id)
+        if severity is not None:
+            s_upper = severity.upper()
+            stmt = stmt.where(func.upper(Alert.severity_level) == s_upper)
+        if can_id is not None:
+            try:
+                cid_int = (
+                    int(can_id, 16) if can_id.lower().startswith("0x") else int(can_id)
+                )
+                stmt = stmt.where(Alert.can_id == cid_int)
+            except ValueError:
+                pass
 
-        if severity:
-            s_clean = severity.lower().strip()
-            results = [a for a in results if a.severity.value == s_clean]
+        if offset:
+            stmt = stmt.offset(offset)
+        stmt = stmt.limit(limit)
 
-        if status:
-            st_clean = status.lower().strip()
-            results = [a for a in results if a.status.value == st_clean]
+        async with SessionLocal() as session:
+            result = await session.execute(stmt)
+            rows = result.scalars().all()
 
-        if attack_category:
-            ac_clean = attack_category.lower().strip()
-            results = [a for a in results if a.attack_category.value == ac_clean]
-
-        if can_id:
-            cid_clean = can_id.upper().strip()
-            results = [a for a in results if a.can_id and a.can_id.upper() == cid_clean]
-
-        # Order newest first
-        results.sort(key=lambda a: a.timestamp, reverse=True)
-        return results[offset : offset + limit]
+        return [AlertOut.model_validate(row) for row in rows]
 
     def get_alert(self, alert_id: str) -> AlertRecord:
         """Retrieve a specific alert by ID."""
@@ -370,6 +464,33 @@ class AlertService:
             self._save_to_storage()
             return alert
 
+    async def summary(self, run_id: Optional[str] = None) -> AlertSummary:
+        """Return aggregated counts (total, by_label, by_severity) for *run_id*."""
+        async with SessionLocal() as session:
+            total_stmt = select(func.count()).select_from(Alert)
+            if run_id is not None:
+                total_stmt = total_stmt.where(Alert.run_id == run_id)
+            total = (await session.execute(total_stmt)).scalar() or 0
+
+            label_stmt = select(Alert.label, func.count().label("cnt")).group_by(
+                Alert.label
+            )
+            if run_id is not None:
+                label_stmt = label_stmt.where(Alert.run_id == run_id)
+            label_rows = (await session.execute(label_stmt)).all()
+
+            sev_stmt = select(Alert.severity_level, func.count().label("cnt")).group_by(
+                Alert.severity_level
+            )
+            if run_id is not None:
+                sev_stmt = sev_stmt.where(Alert.run_id == run_id)
+            sev_rows = (await session.execute(sev_stmt)).all()
+
+        by_label: dict[str, int] = {row.label: row.cnt for row in label_rows}
+        by_severity: dict[str, int] = {row.severity_level: row.cnt for row in sev_rows}
+
+        return AlertSummary(total=total, by_label=by_label, by_severity=by_severity)
+
     def get_stats(self) -> AlertStats:
         """Aggregate alert metrics across severities and lifecycles."""
         with self._lock:
@@ -394,8 +515,33 @@ class AlertService:
         stats.by_attack = by_att
         return stats
 
-    def clear(self) -> None:
-        """Clear all in-memory and persisted alerts (useful for tests)."""
+    # ------------------------------------------------------------------
+    # Delete helpers
+    # ------------------------------------------------------------------
+
+    async def delete_one(self, alert_id: int | str) -> bool:
+        """Delete a single alert by ID. Returns True if found and deleted."""
+        with self._lock:
+            if str(alert_id) in self._alerts:
+                del self._alerts[str(alert_id)]
+                self._save_to_storage()
+
+        try:
+            int_id = int(alert_id)
+            async with SessionLocal() as session:
+                result = await session.execute(delete(Alert).where(Alert.id == int_id))
+                await session.commit()
+            return bool(result.rowcount and result.rowcount > 0)
+        except (ValueError, Exception):
+            return True
+
+    async def clear(self) -> int:
+        """Delete all alert rows from DB and in-memory store."""
         with self._lock:
             self._alerts.clear()
             self._save_to_storage()
+
+        async with SessionLocal() as session:
+            result = await session.execute(delete(Alert))
+            await session.commit()
+        return result.rowcount or 0  # type: ignore[return-value]

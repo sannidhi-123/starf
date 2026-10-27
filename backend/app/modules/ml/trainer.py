@@ -14,7 +14,9 @@ from app.modules.ml.schemas import ConfusionMatrix, Hyperparameters, Metrics
 class Trainer(Protocol):
     name: str
 
-    def fit(self, x: np.ndarray, y: np.ndarray, hp: Hyperparameters) -> tuple[dict, float]: ...
+    def fit(
+        self, x: np.ndarray, y: np.ndarray, hp: Hyperparameters
+    ) -> tuple[dict, float]: ...
 
     def score(self, artifact: dict, x: np.ndarray) -> np.ndarray: ...
 
@@ -26,11 +28,15 @@ def _sigmoid(z: np.ndarray) -> np.ndarray:
 class LogisticRegressionTrainer:
     name = "baseline-logreg"
 
-    def _prepare(self, x: np.ndarray, means: np.ndarray, stds: np.ndarray) -> np.ndarray:
+    def _prepare(
+        self, x: np.ndarray, means: np.ndarray, stds: np.ndarray
+    ) -> np.ndarray:
         x = np.where(np.isnan(x), means, x)
         return (x - means) / stds
 
-    def fit(self, x: np.ndarray, y: np.ndarray, hp: Hyperparameters) -> tuple[dict, float]:
+    def fit(
+        self, x: np.ndarray, y: np.ndarray, hp: Hyperparameters
+    ) -> tuple[dict, float]:
         means = np.nanmean(np.where(np.isfinite(x), x, np.nan), axis=0)
         means = np.where(np.isnan(means), 0.0, means)
         filled = np.where(np.isnan(x), means, x)
@@ -66,7 +72,9 @@ class LogisticRegressionTrainer:
         return _sigmoid(z @ np.array(artifact["weights"]) + artifact["bias"])
 
 
-TRAINERS: dict[str, Trainer] = {LogisticRegressionTrainer.name: LogisticRegressionTrainer()}
+TRAINERS: dict[str, Trainer] = {
+    LogisticRegressionTrainer.name: LogisticRegressionTrainer()
+}
 
 
 def _roc_auc(y: np.ndarray, scores: np.ndarray) -> float | None:
@@ -87,7 +95,11 @@ def _roc_auc(y: np.ndarray, scores: np.ndarray) -> float | None:
 
 
 def compute_metrics(
-    y: np.ndarray, scores: np.ndarray, threshold: float, train_samples: int, final_loss: float
+    y: np.ndarray,
+    scores: np.ndarray,
+    threshold: float,
+    train_samples: int,
+    final_loss: float,
 ) -> Metrics:
     pred = (scores >= threshold).astype(int)
     tp = int(((pred == 1) & (y == 1)).sum())

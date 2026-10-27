@@ -22,6 +22,7 @@ from app.modules.ml.schemas import (
 )
 
 router = APIRouter()
+_svc = MLService()
 
 
 @lru_cache
@@ -55,23 +56,35 @@ async def list_models(
     return {"items": items}
 
 
-@router.post("/models", response_model=ModelSummary, status_code=status.HTTP_201_CREATED)
-def register_model(payload: ModelCreate, service: MLService = Depends(get_ml_service)) -> ModelSummary:
+@router.post(
+    "/models", response_model=ModelSummary, status_code=status.HTTP_201_CREATED
+)
+def register_model(
+    payload: ModelCreate, service: MLService = Depends(get_ml_service)
+) -> ModelSummary:
     return _call(service.register, payload).public()
 
 
 @router.get("/models/{model_id}", response_model=ModelSummary)
-def get_model(model_id: str, service: MLService = Depends(get_ml_service)) -> ModelSummary:
+def get_model(
+    model_id: str, service: MLService = Depends(get_ml_service)
+) -> ModelSummary:
     return _call(service.get, model_id).public()
 
 
 @router.delete("/models/{model_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_model(model_id: str, service: MLService = Depends(get_ml_service)) -> Response:
+def delete_model(
+    model_id: str, service: MLService = Depends(get_ml_service)
+) -> Response:
     _call(service.delete, model_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.post("/models/{model_id}/train", response_model=ModelSummary, status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "/models/{model_id}/train",
+    response_model=ModelSummary,
+    status_code=status.HTTP_202_ACCEPTED,
+)
 def train_model(
     model_id: str,
     payload: TrainRequest,
@@ -84,15 +97,23 @@ def train_model(
 
 
 @router.get("/models/{model_id}/status", response_model=ModelStatusResponse)
-def model_status(model_id: str, service: MLService = Depends(get_ml_service)) -> ModelStatusResponse:
+def model_status(
+    model_id: str, service: MLService = Depends(get_ml_service)
+) -> ModelStatusResponse:
     return _call(service.status, model_id)
 
 
 @router.get("/models/{model_id}/metrics", response_model=Metrics)
-def model_metrics(model_id: str, service: MLService = Depends(get_ml_service)) -> Metrics:
+def model_metrics(
+    model_id: str, service: MLService = Depends(get_ml_service)
+) -> Metrics:
     return _call(service.metrics, model_id)
 
 
 @router.post("/models/{model_id}/predict", response_model=PredictResponse)
-def predict(model_id: str, payload: PredictRequest, service: MLService = Depends(get_ml_service)) -> PredictResponse:
+def predict(
+    model_id: str,
+    payload: PredictRequest,
+    service: MLService = Depends(get_ml_service),
+) -> PredictResponse:
     return _call(service.predict, model_id, payload.frames)

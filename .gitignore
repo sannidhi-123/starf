@@ -6,6 +6,8 @@ __pycache__/
 .mypy_cache/
 *.tsbuildinfo
 *.db
+models/*.pkl
+models/*.metrics.json
 *.sqlite
 node_modules/
 dist/
@@ -13,5 +15,13 @@ dist/
 data/*
 backend/data/
 !data/.gitkeep
+!data/samples/
+!data/samples/*.csv
 coverage.xml
 .coverage
+
+backend/.venv/
+/backend/.venv/
+venv/
+backend/venv/
+*.egg-info/

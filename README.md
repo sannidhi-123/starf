@@ -23,19 +23,35 @@ http://localhost:8000/api/v1/health and http://localhost:8000/docs.
 
 ### Local development
 
-```bash
-cd backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+From the repository root (recommended so `stark` and sample data are resolved cleanly):
 
-cd ../frontend
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Or on Windows: .venv\Scripts\activate
+pip install -r backend/requirements.txt
+pip install -e .
+
+# Run the backend with PYTHONPATH pointing to src (or run from repo root):
+PYTHONPATH=src uvicorn backend.app.main:app --reload --port 8000
+# On Windows PowerShell:
+# $env:PYTHONPATH="src"; uvicorn backend.app.main:app --reload --port 8000
+
+cd frontend
 npm install
 npm run dev
 ```
 
 Set `INTEGRATION_MODE=real` only after implementing and configuring the real service
 adapters. The default `mock` mode keeps the API runnable end-to-end.
+
+### Optional Stage 2 model
+
+Install `backend/requirements-ml.txt`, then train from a labeled CAN CSV with
+`python scripts/train_model.py --data path/to/training.csv --model random_forest`.
+Set `STARF_ML_MODE=trained` and `STARF_MODEL_PATH=models/starf_model.pkl` to load
+the resulting local artifact. `STARF_ML_MODE=demo` uses the clearly labeled
+deterministic demo classifier; `STARF_ML_MODE=rules_only` disables Stage 2.
+The repository sample files are not verified Car Hacking or OTIDS benchmarks.
 
 ## Repository layout
 

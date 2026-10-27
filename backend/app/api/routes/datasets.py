@@ -1,3 +1,16 @@
+"""Datasets API routes.
+
+Endpoints:
+- POST /api/v1/datasets                    Upload a dataset via multipart form (from feature/ml)
+- GET  /api/v1/datasets                    List datasets with filtering/pagination
+- GET  /api/v1/datasets/{id}/download      Download a dataset file
+- GET  /api/v1/datasets/{id}              Get dataset details
+- DELETE /api/v1/datasets/{id}            Delete a dataset
+- POST /api/v1/datasets/upload            JSON-upload endpoint (no python-multipart required)
+"""
+
+from __future__ import annotations
+
 from fastapi import APIRouter, File, Form, Query, Response, UploadFile, status
 from fastapi.responses import FileResponse
 
@@ -23,11 +36,15 @@ async def upload_dataset(
 async def list_datasets(
     q: str | None = Query(default=None, max_length=255),
     source: str | None = Query(default=None, max_length=128),
-    status_filter: str | None = Query(default=None, alias="status", pattern="^(ready|failed)$"),
+    status_filter: str | None = Query(
+        default=None, alias="status", pattern="^(ready|failed)$"
+    ),
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> dict:
-    return await service.list(q=q, source=source, status_filter=status_filter, limit=limit, offset=offset)
+    return await service.list(
+        q=q, source=source, status_filter=status_filter, limit=limit, offset=offset
+    )
 
 
 @router.get("/{dataset_id}/download")

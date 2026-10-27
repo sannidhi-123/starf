@@ -20,14 +20,18 @@ class Hyperparameters(BaseModel):
     epochs: int = Field(default=300, ge=1, le=5000)
     learning_rate: float = Field(default=0.1, gt=0.0, le=10.0)
     l2: float = Field(default=1e-3, ge=0.0)
-    threshold: float = Field(default=0.5, gt=0.0, lt=1.0, description="Anomaly score cut-off")
+    threshold: float = Field(
+        default=0.5, gt=0.0, lt=1.0, description="Anomaly score cut-off"
+    )
     test_split: float = Field(default=0.2, gt=0.0, lt=0.5)
     seed: int = Field(default=42)
 
 
 class ModelCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    architecture: str = Field(default="baseline-logreg", description="Registered trainer name")
+    architecture: str = Field(
+        default="baseline-logreg", description="Registered trainer name"
+    )
     description: str = Field(default="", max_length=500)
     hyperparameters: Hyperparameters = Field(default_factory=Hyperparameters)
 
@@ -38,9 +42,16 @@ class LabeledFrame(BaseModel):
 
 
 class TrainRequest(BaseModel):
-    dataset_id: Optional[str] = Field(default=None, description="Dataset to train on (resolved by the dataset provider)")
-    samples: Optional[List[LabeledFrame]] = Field(default=None, description="Inline labeled frames, in time order")
-    hyperparameters: Optional[Hyperparameters] = Field(default=None, description="Overrides the registered values")
+    dataset_id: Optional[str] = Field(
+        default=None,
+        description="Dataset to train on (resolved by the dataset provider)",
+    )
+    samples: Optional[List[LabeledFrame]] = Field(
+        default=None, description="Inline labeled frames, in time order"
+    )
+    hyperparameters: Optional[Hyperparameters] = Field(
+        default=None, description="Overrides the registered values"
+    )
 
 
 class ConfusionMatrix(BaseModel):
@@ -69,16 +80,23 @@ class ModelRecord(BaseModel):
     description: str = ""
     status: ModelStatus = ModelStatus.REGISTERED
     hyperparameters: Hyperparameters = Field(default_factory=Hyperparameters)
-    data_source: Optional[str] = Field(default=None, description="'inline', 'dataset:<id>' or 'synthetic:<id>'")
+    data_source: Optional[str] = Field(
+        default=None, description="'inline', 'dataset:<id>' or 'synthetic:<id>'"
+    )
     error: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     trained_at: Optional[datetime] = None
     metrics: Optional[Metrics] = None
-    artifact: Optional[dict] = Field(default=None, description="Serialized trained parameters")
+    artifact: Optional[dict] = Field(
+        default=None, description="Serialized trained parameters"
+    )
 
     def public(self) -> "ModelSummary":
-        return ModelSummary(**self.model_dump(exclude={"artifact", "metrics"}), has_metrics=self.metrics is not None)
+        return ModelSummary(
+            **self.model_dump(exclude={"artifact", "metrics"}),
+            has_metrics=self.metrics is not None,
+        )
 
 
 class ModelSummary(BaseModel):

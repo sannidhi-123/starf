@@ -29,9 +29,13 @@ def upload(filename: str, content: bytes) -> UploadFile:
 
 
 @pytest.mark.asyncio
-async def test_upload_metadata_filter_download_and_delete(dataset_service: DatasetService, tmp_path: Path) -> None:
+async def test_upload_metadata_filter_download_and_delete(
+    dataset_service: DatasetService, tmp_path: Path
+) -> None:
     content = b"timestamp,can_id,dlc\n0.0,0x123,1\n0.1,0x456,2\n"
-    item = await dataset_service.create(upload("drive.csv", content), source="Car-Hacking")
+    item = await dataset_service.create(
+        upload("drive.csv", content), source="Car-Hacking"
+    )
 
     assert item["name"] == "drive"
     assert item["source"] == "Car-Hacking"
@@ -40,7 +44,9 @@ async def test_upload_metadata_filter_download_and_delete(dataset_service: Datas
     assert item["size_bytes"] == len(content)
     assert (tmp_path / "uploads" / f"{item['id']}.csv").read_bytes() == content
 
-    page = await dataset_service.list(q="DRIVE", source="Car-Hacking", status_filter="ready")
+    page = await dataset_service.list(
+        q="DRIVE", source="Car-Hacking", status_filter="ready"
+    )
     assert page["total"] == 1
     assert page["items"][0]["id"] == item["id"]
     assert (await dataset_service.get(item["id"]))["sha256"] == item["sha256"]
@@ -55,7 +61,9 @@ async def test_upload_metadata_filter_download_and_delete(dataset_service: Datas
 
 
 @pytest.mark.asyncio
-async def test_rejects_malformed_csv_without_persisting(dataset_service: DatasetService) -> None:
+async def test_rejects_malformed_csv_without_persisting(
+    dataset_service: DatasetService,
+) -> None:
     malformed = b"timestamp,can_id,dlc\n0.0,0x123\n"
 
     with pytest.raises(HTTPException) as error:
@@ -72,8 +80,11 @@ async def test_rejects_unsupported_file_type(dataset_service: DatasetService) ->
 
     assert error.value.status_code == 400
 
+
 @pytest.mark.asyncio
-async def test_dataset_api_upload_list_download_and_delete(dataset_service: DatasetService, monkeypatch) -> None:
+async def test_dataset_api_upload_list_download_and_delete(
+    dataset_service: DatasetService, monkeypatch
+) -> None:
     from httpx import ASGITransport, AsyncClient
 
     from app.api.routes import datasets as dataset_routes
@@ -83,7 +94,9 @@ async def test_dataset_api_upload_list_download_and_delete(dataset_service: Data
     content = b"timestamp,can_id,dlc\n0.0,0x123,1\n"
 
     async with app.router.lifespan_context(app):
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
             response = await client.post(
                 "/api/v1/datasets",
                 files={"file": ("capture.csv", content, "text/csv")},
@@ -92,7 +105,9 @@ async def test_dataset_api_upload_list_download_and_delete(dataset_service: Data
             assert response.status_code == 201
             dataset_id = response.json()["id"]
 
-            listed = await client.get("/api/v1/datasets", params={"q": "capture", "source": "fixture"})
+            listed = await client.get(
+                "/api/v1/datasets", params={"q": "capture", "source": "fixture"}
+            )
             assert listed.status_code == 200
             assert listed.json()["total"] == 1
             assert listed.json()["items"][0]["id"] == dataset_id
@@ -110,12 +125,17 @@ async def test_dataset_api_upload_list_download_and_delete(dataset_service: Data
             missing = await client.get(f"/api/v1/datasets/{dataset_id}")
             assert missing.status_code == 404
 
+
 @pytest.mark.asyncio
-async def test_accepts_parquet_and_records_schema(dataset_service: DatasetService) -> None:
+async def test_accepts_parquet_and_records_schema(
+    dataset_service: DatasetService,
+) -> None:
     import pandas as pd
 
     buffer = BytesIO()
-    pd.DataFrame({"timestamp": [0.0, 0.1], "can_id": [291, 1110]}).to_parquet(buffer, index=False)
+    pd.DataFrame({"timestamp": [0.0, 0.1], "can_id": [291, 1110]}).to_parquet(
+        buffer, index=False
+    )
     item = await dataset_service.create(upload("frames.parquet", buffer.getvalue()))
 
     assert item["format"] == "parquet"

@@ -1,0 +1,4 @@
+# Optional Stage 2 training and inference dependencies.
+scikit-learn>=1.4,<2
+xgboost>=2,<4
+shap>=0.45,<1

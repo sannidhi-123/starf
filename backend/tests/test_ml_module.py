@@ -65,8 +65,12 @@ def test_train_predict_and_metrics(service):
     assert m.accuracy > 0.9 and m.recall > 0.8 and m.roc_auc and m.roc_auc > 0.9
     assert m.confusion_matrix.tp + m.confusion_matrix.fn > 0
 
-    flood = CANFrameInput(timestamp=1.0, can_id=0, dlc=8, payload="00" * 8, delta_t=0.0003)
-    normal = CANFrameInput(timestamp=2.0, can_id=0x100, dlc=8, payload="0A1B2C3D0A1B2C3D", delta_t=0.01)
+    flood = CANFrameInput(
+        timestamp=1.0, can_id=0, dlc=8, payload="00" * 8, delta_t=0.0003
+    )
+    normal = CANFrameInput(
+        timestamp=2.0, can_id=0x100, dlc=8, payload="0A1B2C3D0A1B2C3D", delta_t=0.01
+    )
     res = service.predict(model_id, [flood, normal])
     assert [p.is_anomalous for p in res.predictions] == [True, False]
     assert res.anomalous_count == 1
@@ -100,24 +104,46 @@ def test_interrupted_training_is_recovered_on_restart(tmp_path):
 
 # ---- API --------------------------------------------------------------------
 def test_api_full_workflow(client):
-    r = client.post("/api/v1/ml/models", json={"name": "Baseline", "hyperparameters": {"epochs": 200}})
+    r = client.post(
+        "/api/v1/ml/models",
+        json={"name": "Baseline", "hyperparameters": {"epochs": 200}},
+    )
     assert r.status_code == 201
     model_id = r.json()["id"]
     assert r.json()["status"] == "registered"
 
     assert client.get(f"/api/v1/ml/models/{model_id}/metrics").status_code == 409
-    assert client.post(f"/api/v1/ml/models/{model_id}/predict", json={"frames": [
-        {"timestamp": 0, "can_id": 1, "dlc": 0}]}).status_code == 409
+    assert (
+        client.post(
+            f"/api/v1/ml/models/{model_id}/predict",
+            json={"frames": [{"timestamp": 0, "can_id": 1, "dlc": 0}]},
+        ).status_code
+        == 409
+    )
 
     r = client.post(f"/api/v1/ml/models/{model_id}/train", json={"dataset_id": "demo"})
     assert r.status_code == 202
-    assert client.get(f"/api/v1/ml/models/{model_id}/status").json()["status"] == "trained"  # background task done
+    assert (
+        client.get(f"/api/v1/ml/models/{model_id}/status").json()["status"] == "trained"
+    )  # background task done
 
     metrics = client.get(f"/api/v1/ml/models/{model_id}/metrics").json()
     assert metrics["f1"] > 0.8
 
-    r = client.post(f"/api/v1/ml/models/{model_id}/predict", json={"frames": [
-        {"timestamp": 1.0, "can_id": 0, "dlc": 8, "payload": "0000000000000000", "delta_t": 0.0003}]})
+    r = client.post(
+        f"/api/v1/ml/models/{model_id}/predict",
+        json={
+            "frames": [
+                {
+                    "timestamp": 1.0,
+                    "can_id": 0,
+                    "dlc": 8,
+                    "payload": "0000000000000000",
+                    "delta_t": 0.0003,
+                }
+            ]
+        },
+    )
     assert r.status_code == 200 and r.json()["predictions"][0]["is_anomalous"] is True
 
     assert client.delete(f"/api/v1/ml/models/{model_id}").status_code == 204
@@ -126,10 +152,22 @@ def test_api_full_workflow(client):
 
 def test_api_validation_errors(client):
     assert client.post("/api/v1/ml/models", json={"name": ""}).status_code == 422
-    assert client.post("/api/v1/ml/models", json={"name": "x", "architecture": "nope"}).status_code == 422
+    assert (
+        client.post(
+            "/api/v1/ml/models", json={"name": "x", "architecture": "nope"}
+        ).status_code
+        == 422
+    )
     model_id = client.post("/api/v1/ml/models", json={"name": "x"}).json()["id"]
-    assert client.post(f"/api/v1/ml/models/{model_id}/train", json={}).status_code == 422
-    assert client.post("/api/v1/ml/models/mdl-unknown/train", json={"dataset_id": "d"}).status_code == 404
+    assert (
+        client.post(f"/api/v1/ml/models/{model_id}/train", json={}).status_code == 422
+    )
+    assert (
+        client.post(
+            "/api/v1/ml/models/mdl-unknown/train", json={"dataset_id": "d"}
+        ).status_code
+        == 404
+    )
     assert client.get("/api/v1/ml/models/..%2Fetc").status_code == 404
 
 

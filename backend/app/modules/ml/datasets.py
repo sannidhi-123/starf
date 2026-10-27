@@ -34,12 +34,20 @@ class SyntheticDatasetProvider:
         for _ in range(self.size):
             kind = rng.choice(["normal", "dos", "fuzzy"], p=[0.8, 0.1, 0.1])
             if kind == "normal":
-                dt, can_id = max(rng.normal(0.01, 0.002), 0.002), int(rng.choice([0x100, 0x1F0, 0x2A0]))
+                dt, can_id = max(rng.normal(0.01, 0.002), 0.002), int(
+                    rng.choice([0x100, 0x1F0, 0x2A0])
+                )
                 payload = [int(v) for v in rng.integers(0, 64, size=8)]
             elif kind == "dos":
-                dt, can_id, payload = max(rng.normal(0.0003, 0.0001), 0.00005), 0x000, [0] * 8
+                dt, can_id, payload = (
+                    max(rng.normal(0.0003, 0.0001), 0.00005),
+                    0x000,
+                    [0] * 8,
+                )
             else:
-                dt, can_id = float(rng.uniform(0.0005, 0.03)), int(rng.integers(0, 0x800))
+                dt, can_id = float(rng.uniform(0.0005, 0.03)), int(
+                    rng.integers(0, 0x800)
+                )
                 payload = [int(v) for v in rng.integers(0, 256, size=8)]
             t += dt
             out.append(

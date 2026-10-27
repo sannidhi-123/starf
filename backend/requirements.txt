@@ -7,13 +7,8 @@ aiosqlite==0.20.0
 httpx==0.28.1
 pytest==8.3.4
 pytest-asyncio==0.25.0
- feature/ml
 numpy==2.2.1
-
 pandas
-numpy
 pyarrow
 joblib
 python-multipart==0.0.20
-
-main
