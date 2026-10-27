@@ -12,9 +12,16 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./stark.db"
     integration_mode: str = "mock"
     log_level: str = "INFO"
-    cors_origins: list[str] = ["http://localhost:5173"]
+    cors_origins: list[str] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore", case_sensitive=False)
+    model_config = SettingsConfigDict(
+        env_file=".env", extra="ignore", case_sensitive=False
+    )
 
     @field_validator("integration_mode")
     @classmethod

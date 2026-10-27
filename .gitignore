@@ -12,5 +12,13 @@ dist/
 .DS_Store
 data/*
 !data/.gitkeep
+!data/samples/
+!data/samples/*.csv
 coverage.xml
 .coverage
+
+backend/.venv/
+/backend/.venv/
+venv/
+backend/venv/
+*.egg-info/
